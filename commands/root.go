@@ -9,6 +9,7 @@ import (
 	entitlementscmd "github.com/akshitkrnagpal/revcat/commands/entitlements"
 	offeringscmd "github.com/akshitkrnagpal/revcat/commands/offerings"
 	packagescmd "github.com/akshitkrnagpal/revcat/commands/packages"
+	publishcmd "github.com/akshitkrnagpal/revcat/commands/publish"
 	subscriberscmd "github.com/akshitkrnagpal/revcat/commands/subscribers"
 	versioncmd "github.com/akshitkrnagpal/revcat/commands/version"
 	"github.com/akshitkrnagpal/revcat/internal/output"
@@ -76,6 +77,7 @@ func init() {
 	rootCmd.AddCommand(entitlementscmd.Cmd)
 	rootCmd.AddCommand(offeringscmd.Cmd)
 	rootCmd.AddCommand(packagescmd.Cmd)
+	rootCmd.AddCommand(publishcmd.Cmd)
 	rootCmd.AddCommand(subscriberscmd.Cmd)
 	rootCmd.AddCommand(versioncmd.Cmd(Version))
 }

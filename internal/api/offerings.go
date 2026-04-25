@@ -64,3 +64,46 @@ func (c *Client) ListPackages(ctx context.Context, offeringLookupKey string) ([]
 	}
 	return paginate[Package](ctx, c, c.projectPath("/offerings/"+url.PathEscape(offeringLookupKey)+"/packages"))
 }
+
+// SetCurrentOffering promotes the named offering to current. The v2
+// spelling has bounced between trailing "_set_current" suffixes and a
+// dedicated /current endpoint; we use the suffix path which is what the
+// dashboard surfaces.
+func (c *Client) SetCurrentOffering(ctx context.Context, lookupKey string) (*Offering, error) {
+	if err := c.requireProject(); err != nil {
+		return nil, err
+	}
+	var out Offering
+	path := c.projectPath("/offerings/" + url.PathEscape(lookupKey) + "/_set_current")
+	if err := c.Do(ctx, "POST", path, struct{}{}, &out); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+// GetPaywall returns the raw paywall config json for an offering. Returned
+// as a generic map so we don't have to model RC's evolving paywalls v2
+// schema in revcat just to ship publish.
+func (c *Client) GetPaywall(ctx context.Context, offeringLookupKey string) (map[string]any, error) {
+	if err := c.requireProject(); err != nil {
+		return nil, err
+	}
+	var out map[string]any
+	path := c.projectPath("/offerings/" + url.PathEscape(offeringLookupKey) + "/paywall")
+	if err := c.Do(ctx, "GET", path, nil, &out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// PutPaywall replaces the paywall config for an offering with the supplied
+// json blob. Validation is server-side; we pass the body through verbatim
+// after a json.Marshal round-trip so a typo in the file is caught before
+// the network call.
+func (c *Client) PutPaywall(ctx context.Context, offeringLookupKey string, body map[string]any) error {
+	if err := c.requireProject(); err != nil {
+		return err
+	}
+	path := c.projectPath("/offerings/" + url.PathEscape(offeringLookupKey) + "/paywall")
+	return c.Do(ctx, "PUT", path, body, nil)
+}
