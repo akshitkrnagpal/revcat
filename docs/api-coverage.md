@@ -1,136 +1,190 @@
 # RevenueCat v2 API coverage
 
-Audit of revcat's coverage of the RevenueCat v2 REST API. Source of truth: <https://www.revenuecat.com/docs/api-v2>.
+revcat aims for full v2 coverage with the per-project secret key. This file maps every documented operation to the revcat command that wraps it.
+
+Source of truth: <https://www.revenuecat.com/docs/api-v2>.
 
 ## Headline
 
-- **~13 of ~95 documented v2 operations have CLI surface (~14%).**
-- Coverage skews to high-value workflows (subscriber debugging, event tail, publish offering) rather than full CRUD.
-- Two write-paths use v1-style URLs and need verification against the live v2 API. See "implementation issues" below.
+- ~89 of ~95 documented v2 operations covered.
+- Remaining ~6 require a project-management / partner-tier key and are out of scope.
 
-## Implementation issues to fix
+## Coverage
 
-The CLI ships paths that may be v1-flavored (working in some accounts, broken in others). Verify against the live API and update before public launch.
+### Project management
 
-| File | Method | Current path | v2 docs spelling |
-| --- | --- | --- | --- |
-| `internal/api/customers.go` | `GrantPromotionalEntitlement` | `POST /customers/{id}/active_entitlements/{ent}/grant_promotional` | `POST /customers/{id}/actions/grant_entitlement` |
-| `internal/api/customers.go` | `RevokePromotionalEntitlement` | `POST /customers/{id}/active_entitlements/{ent}/revoke_promotional` | `POST /customers/{id}/actions/revoke_entitlement` |
-| `internal/api/customers.go` | `RefundTransaction` | `POST /customers/{id}/transactions/{tid}:refund` | subscription-scoped: `POST /subscriptions/{sid}/transactions/{tid}/actions/refund` |
-| `internal/api/offerings.go` | `SetCurrentOffering` | `POST /offerings/{id}/_set_current` | not in v2 docs - likely needs to be modeled as `update offering` with a flag |
+| API operation | revcat |
+| --- | --- |
+| `GET /projects` | `revcat projects list`, `revcat auth login` (picker) |
+| `GET /projects/{id}` | `revcat projects view` |
+| `POST /projects` | partner-tier only |
 
-## Coverage matrix
+### Apps
 
-| Resource | API operation | API path | revcat command | Notes |
-|---|---|---|---|---|
-| Project | list | `GET /projects` | `revcat auth login` (picker), `revcat auth status`, `revcat auth doctor`, `revcat doctor` | covered (no top-level `revcat projects list`) |
-| Project | get | `GET /projects/{project_id}` | - | gap |
-| Project | create | `POST /projects` | - | partner-tier only |
-| App | list | `GET /projects/{project_id}/apps` | - | gap |
-| App | get | `GET /apps/{app_id}` | - | gap |
-| App | create | `POST /apps` | - | partner-tier only |
-| App | update | `POST /apps/{app_id}` | - | partner-tier only |
-| App | delete | `DELETE /apps/{app_id}` | - | partner-tier only |
-| App | list public API keys | `GET /apps/{app_id}/public_api_keys` | - | gap |
-| App | get StoreKit config | `GET /apps/{app_id}/store_kit_config` | - | gap |
-| Audit Log | list | `GET /projects/{id}/audit_logs` | - | partner-tier only |
-| Charts & Metrics | overview | `GET /projects/{id}/metrics/overview` | - | gap (high TTY value) |
-| Charts & Metrics | get chart | `GET /charts/{chart_name}` | - | gap |
-| Charts & Metrics | chart options | `GET /charts/{chart_name}/options` | - | gap |
-| Collaborator | list | `GET /collaborators` | - | partner-tier only |
-| Customer | list | `GET /customers` | - | gap |
-| Customer | get | `GET /customers/{id}` | `revcat subscribers info` | covered |
-| Customer | create | `POST /customers` | - | gap |
-| Customer | delete | `DELETE /customers/{id}` | - | gap (GDPR/test cleanup) |
-| Customer | transfer | `POST .../actions/transfer` | - | gap |
-| Customer | grant entitlement | `POST .../actions/grant_entitlement` | `revcat subscribers grant` | covered (path spelling fix needed) |
-| Customer | revoke entitlement | `POST .../actions/revoke_entitlement` | `revcat subscribers revoke` | covered (path spelling fix needed) |
-| Customer | override offering | `POST .../actions/override_offering` | - | gap |
-| Customer | restore Google Play purchase | `POST .../actions/restore_google_play_purchase` | - | gap |
-| Customer | list subscriptions | `GET /customers/{id}/subscriptions` | `revcat subscribers info` | covered |
-| Customer | list purchases | `GET /customers/{id}/purchases` | `revcat subscribers info` | covered |
-| Customer | list active entitlements | `GET /customers/{id}/active_entitlements` | `revcat subscribers info` | covered |
-| Customer | list aliases | `GET /customers/{id}/aliases` | `revcat subscribers info` | covered |
-| Customer | list invoices | `GET /customers/{id}/invoices` | - | gap |
-| Customer | list virtual currency balances | `GET /customers/{id}/virtual_currencies_balances` | - | gap |
-| Customer | create VC transaction | `POST /customers/{id}/virtual_currencies/transactions` | - | gap |
-| Customer | update VC balance | `POST /customers/{id}/virtual_currencies_balances` | - | gap |
-| Customer | list attributes | `GET /customers/{id}/attributes` | - | gap |
-| Customer | set attributes | `POST /customers/{id}/attributes` | - | gap |
-| Entitlement | list | `GET /entitlements` | `revcat entitlements list` | covered |
-| Entitlement | get | `GET /entitlements/{id}` | `revcat entitlements view` | covered |
-| Entitlement | create | `POST /entitlements` | - | gap |
-| Entitlement | update | `POST /entitlements/{id}` | - | gap |
-| Entitlement | delete | `DELETE /entitlements/{id}` | - | gap |
-| Entitlement | list attached products | `GET /entitlements/{id}/products` | - | gap |
-| Entitlement | archive / unarchive | `POST /entitlements/{id}/actions/archive\|unarchive` | - | gap |
-| Entitlement | attach / detach products | `POST /entitlements/{id}/actions/attach_products\|detach_products` | - | gap (high value) |
-| Offering | list | `GET /offerings` | `revcat offerings list` | covered |
-| Offering | get | `GET /offerings/{id}` | `revcat offerings view` | covered |
-| Offering | create | `POST /offerings` | - | gap |
-| Offering | update | `POST /offerings/{id}` | - | gap |
-| Offering | delete | `DELETE /offerings/{id}` | - | gap |
-| Offering | archive / unarchive | `POST /offerings/{id}/actions/archive\|unarchive` | - | gap |
-| Offering | set current | (no v2 docs endpoint) | `revcat publish offering` | covered with v1-style path; needs verification |
-| Package | list | `GET /offerings/{id}/packages` | `revcat packages list` | covered |
-| Package | get | `GET /packages/{id}` | - | gap |
-| Package | create | `POST /packages` | - | gap |
-| Package | update | `POST /packages/{id}` | - | gap |
-| Package | delete | `DELETE /packages/{id}` | - | gap |
-| Package | list attached products | `GET /packages/{id}/products` | - | gap |
-| Package | attach / detach products | `POST /packages/{id}/actions/attach_products\|detach_products` | - | gap |
-| Product | list | `GET /products` | - | gap (no `revcat products` group at all) |
-| Product | get | `GET /products/{id}` | - | gap |
-| Product | create | `POST /products` | - | gap |
-| Product | update | `POST /products/{id}` | - | gap |
-| Product | delete | `DELETE /products/{id}` | - | gap |
-| Product | archive / unarchive | `POST /products/{id}/actions/archive\|unarchive` | - | gap |
-| Product | push to store | `POST /products/{id}/actions/push_to_store` | - | gap |
-| Virtual Currency | list | `GET /virtual_currencies` | - | gap |
-| Virtual Currency | get | `GET /virtual_currencies/{id}` | - | gap |
-| Virtual Currency | create | `POST /virtual_currencies` | - | gap |
-| Virtual Currency | update | `POST /virtual_currencies/{id}` | - | gap |
-| Virtual Currency | delete | `DELETE /virtual_currencies/{id}` | - | gap |
-| Virtual Currency | archive / unarchive | `POST /virtual_currencies/{id}/actions/archive\|unarchive` | - | gap |
-| Purchase | get | `GET /purchases/{id}` | - | gap |
-| Purchase | list entitlements | `GET /purchases/{id}/entitlements` | - | gap |
-| Purchase | refund (Web Billing) | `POST /purchases/{id}/actions/refund` | - | gap |
-| Purchase | search by store id | `GET /purchases/search` | - | gap (high support value) |
-| Subscription | get | `GET /subscriptions/{id}` | - | gap |
-| Subscription | list transactions | `GET /subscriptions/{id}/transactions` | - | gap |
-| Subscription | refund transaction | `POST /subscriptions/{sid}/transactions/{tid}/actions/refund` | `revcat subscribers refund` | covered (path spelling fix needed) |
-| Subscription | list entitlements | `GET /subscriptions/{id}/entitlements` | - | gap |
-| Subscription | cancel (Web Billing) | `POST /subscriptions/{id}/actions/cancel` | - | gap |
-| Subscription | refund subscription | `POST /subscriptions/{id}/actions/refund` | - | gap |
-| Subscription | management URL | `GET /subscriptions/{id}/management_url` | - | gap |
-| Subscription | search by store id | `GET /subscriptions/search` | - | gap (high support value) |
-| Invoice | get | `GET /invoices/{id}` | - | gap |
-| Paywall | list | `GET /paywalls` | - | gap |
-| Paywall | get | `GET /paywalls/{id}` | (partial) `revcat publish offering` reads `/offerings/{id}/paywall` | covered for offering-scoped flavor only |
-| Paywall | create | `POST /paywalls` | - | gap |
-| Paywall | delete | `DELETE /paywalls/{id}` | - | gap |
-| Paywall | put offering paywall | `PUT /offerings/{id}/paywall` | `revcat publish offering --paywall <file>` | covered |
-| Webhook | list | `GET /integrations/webhooks` | - | gap |
-| Webhook | get | `GET /integrations/webhooks/{id}` | - | gap |
-| Webhook | create | `POST /integrations/webhooks` | - | gap |
-| Webhook | update | `POST /integrations/webhooks/{id}` | - | gap |
-| Webhook | delete | `DELETE /integrations/webhooks/{id}` | - | gap |
-| Event | list | `GET /events` | `revcat events list`, `revcat events tail` | covered |
+| API operation | revcat |
+| --- | --- |
+| `GET /apps` | `revcat apps list` |
+| `GET /apps/{id}` | `revcat apps view` |
+| `GET /apps/{id}/public_api_keys` | `revcat apps public-keys` |
+| `GET /apps/{id}/store_kit_config` | `revcat apps storekit-config` |
+| `POST /apps`, `POST /apps/{id}`, `DELETE /apps/{id}` | partner-tier only |
 
-## High-value gaps (ranked)
+### Customers
 
-1. **`revcat subscribers list / search`** - `GET /customers`, `GET /subscriptions/search`, `GET /purchases/search`. The single most-asked support flow ("find user by email or order id") is unbuildable today.
-2. **`revcat products` group** - the entire `/products` resource is missing. Catalog-as-code is the natural revcat moat and you can't do it without products.
-3. **`revcat offerings create|update|delete` + package CRUD + entitlement attach/detach** - turns revcat into a catalog deployer instead of a read-only viewer. Pairs with #2.
-4. **`revcat metrics overview` / `revcat charts`** - one-shot revenue snapshot in the terminal. Cheap to build, very high "wow" factor for a demo.
-5. **`revcat webhooks` group** - list/create/update/delete `/integrations/webhooks`. Easy CRUD, very high pain today (everyone clicks the dashboard for this).
-6. **Customer attributes get/set** - `GET|POST /customers/{id}/attributes`. Heavy support-rep use case, trivial to add.
-7. **`revcat subscribers transfer`** - `POST .../actions/transfer`. Common manual-fix flow that today requires the dashboard.
-8. **Subscription management** - `cancel`, `refund` at subscription level, `management_url`, `list transactions`. Today `revcat subscribers refund` only handles a single transaction by id; the realistic flow is "find the active sub, refund the latest charge", which needs these.
+| API operation | revcat |
+| --- | --- |
+| `GET /customers` | `revcat subscribers list` |
+| `GET /customers/{id}` | `revcat subscribers info` |
+| `POST /customers` | `revcat subscribers create` |
+| `DELETE /customers/{id}` | `revcat subscribers delete` |
+| `POST /customers/{id}/actions/transfer` | `revcat subscribers transfer` |
+| `POST /customers/{id}/actions/grant_entitlement` | `revcat subscribers grant` |
+| `POST /customers/{id}/actions/revoke_entitlement` | `revcat subscribers revoke` |
+| `POST /customers/{id}/actions/override_offering` | `revcat subscribers override-offering` |
+| `POST /customers/{id}/actions/restore_google_play_purchase` | `revcat subscribers restore-google-play` |
+| `GET /customers/{id}/subscriptions` | `revcat subscribers info` |
+| `GET /customers/{id}/purchases` | `revcat subscribers info` |
+| `GET /customers/{id}/active_entitlements` | `revcat subscribers info` |
+| `GET /customers/{id}/aliases` | `revcat subscribers info` |
+| `GET /customers/{id}/invoices` | `revcat subscribers invoices` |
+| `GET /customers/{id}/attributes` | `revcat subscribers attributes` |
+| `POST /customers/{id}/attributes` | `revcat subscribers attributes --set` |
+| `GET /customers/{id}/virtual_currencies_balances` | `revcat subscribers vc-balance` |
+| `POST /customers/{id}/virtual_currencies/transactions` | `revcat subscribers vc-tx` |
+| `POST /customers/{id}/virtual_currencies_balances` | `revcat subscribers vc-set-balance` |
 
-## Out of scope
+### Entitlements
 
-- **Project create, App CRUD, Audit Logs, Collaborators** - all behind project-management / partner-tier keys per RC's permissions matrix. revcat targets the per-project secret key, so these should be explicitly punted in the README rather than implemented.
-- **Virtual Currency CRUD** - niche, mostly mobile-game studios. Worth a stub later, not a priority.
-- **Web Billing-specific verbs** (`purchases/{id}/actions/refund`, `subscriptions/{id}/actions/cancel`) - only meaningful for RC's Web Billing customers. Add when user-base overlaps.
-- **Paywalls top-level resource** (`/paywalls` list/get/create/delete) - the offering-scoped `PUT /offerings/{id}/paywall` already covers the publish-as-code use case. Standalone resource is for dashboard's paywall library, lower priority.
+| API operation | revcat |
+| --- | --- |
+| `GET /entitlements` | `revcat entitlements list` |
+| `GET /entitlements/{id}` | `revcat entitlements view` |
+| `POST /entitlements` | `revcat entitlements create` |
+| `POST /entitlements/{id}` | `revcat entitlements update` |
+| `DELETE /entitlements/{id}` | `revcat entitlements delete` |
+| `GET /entitlements/{id}/products` | `revcat entitlements products` |
+| `POST /entitlements/{id}/actions/archive` | `revcat entitlements archive` |
+| `POST /entitlements/{id}/actions/unarchive` | `revcat entitlements unarchive` |
+| `POST /entitlements/{id}/actions/attach_products` | `revcat entitlements attach` |
+| `POST /entitlements/{id}/actions/detach_products` | `revcat entitlements detach` |
+
+### Offerings
+
+| API operation | revcat |
+| --- | --- |
+| `GET /offerings` | `revcat offerings list` |
+| `GET /offerings/{id}` | `revcat offerings view` |
+| `POST /offerings` | `revcat offerings create` |
+| `POST /offerings/{id}` | `revcat offerings update`, `revcat offerings set-current`, `revcat publish offering --current` |
+| `DELETE /offerings/{id}` | `revcat offerings delete` |
+| `POST /offerings/{id}/actions/archive` | `revcat offerings archive` |
+| `POST /offerings/{id}/actions/unarchive` | `revcat offerings unarchive` |
+| `PUT /offerings/{id}/paywall` | `revcat publish offering --paywall <file>` |
+
+### Packages
+
+| API operation | revcat |
+| --- | --- |
+| `GET /offerings/{id}/packages` | `revcat packages list --offering <id>` |
+| `GET /packages/{id}` | `revcat packages view` |
+| `POST /packages` | `revcat packages create` |
+| `POST /packages/{id}` | `revcat packages update` |
+| `DELETE /packages/{id}` | `revcat packages delete` |
+| `GET /packages/{id}/products` | `revcat packages products` |
+| `POST /packages/{id}/actions/attach_products` | `revcat packages attach` |
+| `POST /packages/{id}/actions/detach_products` | `revcat packages detach` |
+
+### Products
+
+| API operation | revcat |
+| --- | --- |
+| `GET /products` | `revcat products list` |
+| `GET /products/{id}` | `revcat products view` |
+| `POST /products` | `revcat products create` |
+| `POST /products/{id}` | `revcat products update` |
+| `DELETE /products/{id}` | `revcat products delete` |
+| `POST /products/{id}/actions/archive` | `revcat products archive` |
+| `POST /products/{id}/actions/unarchive` | `revcat products unarchive` |
+| `POST /products/{id}/actions/push_to_store` | `revcat products push-to-store` |
+
+### Paywalls
+
+| API operation | revcat |
+| --- | --- |
+| `GET /paywalls` | `revcat paywalls list` |
+| `GET /paywalls/{id}` | `revcat paywalls view` |
+| `POST /paywalls` | `revcat paywalls create` |
+| `DELETE /paywalls/{id}` | `revcat paywalls delete` |
+
+### Subscriptions
+
+| API operation | revcat |
+| --- | --- |
+| `GET /subscriptions/{id}` | `revcat subscriptions view` |
+| `GET /subscriptions/{id}/transactions` | `revcat subscriptions transactions` |
+| `GET /subscriptions/{id}/entitlements` | `revcat subscriptions entitlements` |
+| `POST /subscriptions/{id}/actions/cancel` | `revcat subscriptions cancel` |
+| `POST /subscriptions/{id}/actions/refund` | `revcat subscriptions refund` |
+| `POST /subscriptions/{sid}/transactions/{tid}/actions/refund` | `revcat subscribers refund` |
+| `GET /subscriptions/{id}/management_url` | `revcat subscriptions management-url` |
+| `GET /subscriptions/search` | `revcat subscriptions search` |
+
+### Purchases
+
+| API operation | revcat |
+| --- | --- |
+| `GET /purchases/{id}` | `revcat purchases view` |
+| `GET /purchases/{id}/entitlements` | `revcat purchases entitlements` |
+| `POST /purchases/{id}/actions/refund` | `revcat purchases refund` |
+| `GET /purchases/search` | `revcat purchases search` |
+
+### Invoices
+
+| API operation | revcat |
+| --- | --- |
+| `GET /invoices/{id}` | `revcat invoices view` |
+
+### Events
+
+| API operation | revcat |
+| --- | --- |
+| `GET /events` | `revcat events list`, `revcat events tail` |
+
+### Webhooks
+
+| API operation | revcat |
+| --- | --- |
+| `GET /integrations/webhooks` | `revcat webhooks list` |
+| `GET /integrations/webhooks/{id}` | `revcat webhooks view` |
+| `POST /integrations/webhooks` | `revcat webhooks create` |
+| `POST /integrations/webhooks/{id}` | `revcat webhooks update` |
+| `DELETE /integrations/webhooks/{id}` | `revcat webhooks delete` |
+
+### Virtual currencies
+
+| API operation | revcat |
+| --- | --- |
+| `GET /virtual_currencies` | `revcat virtual-currencies list` |
+| `GET /virtual_currencies/{id}` | `revcat virtual-currencies view` |
+| `POST /virtual_currencies` | `revcat virtual-currencies create` |
+| `POST /virtual_currencies/{id}` | `revcat virtual-currencies update` |
+| `DELETE /virtual_currencies/{id}` | `revcat virtual-currencies delete` |
+| `POST /virtual_currencies/{id}/actions/archive` | `revcat virtual-currencies archive` |
+| `POST /virtual_currencies/{id}/actions/unarchive` | `revcat virtual-currencies unarchive` |
+
+### Charts & metrics
+
+| API operation | revcat |
+| --- | --- |
+| `GET /metrics/overview` | `revcat metrics overview` |
+| `GET /charts/{name}` | `revcat charts get <name>` |
+| `GET /charts/{name}/options` | `revcat charts options <name>` |
+
+## Out of scope (partner-tier keys only)
+
+- `POST /projects` - project create
+- App CRUD (`POST /apps`, `POST /apps/{id}`, `DELETE /apps/{id}`)
+- `GET /audit_logs`
+- `GET /collaborators`
+
+These need a project-management / partner-tier API key. revcat targets the per-project secret key, so they live in the dashboard.
