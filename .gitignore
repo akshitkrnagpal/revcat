@@ -1,0 +1,7 @@
+/revcat
+/dist/
+.revcat/
+.env
+.env.local
+.DS_Store
+*.log

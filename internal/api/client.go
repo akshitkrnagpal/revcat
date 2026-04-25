@@ -1,0 +1,196 @@
+// Package api wraps the RevenueCat v2 REST API.
+//
+// Hand-rolled (RC ships no Go SDK). Uses net/http stdlib with a thin retry
+// layer for 429 + 5xx, and exposes typed methods per resource.
+package api
+
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+	"net/http"
+	"os"
+	"strings"
+	"time"
+)
+
+// BaseURL is the v2 REST root. Override for test/staging via env.
+const BaseURL = "https://api.revenuecat.com/v2"
+
+const userAgent = "revcat-cli"
+
+// envDebug toggles full request/response logging (key redacted).
+const envDebug = "REVCAT_DEBUG"
+
+// Client talks to the RC v2 REST API on behalf of a single profile.
+type Client struct {
+	http      *http.Client
+	baseURL   string
+	secretKey string
+	projectID string
+	debug     bool
+	version   string
+}
+
+// New constructs a Client. SecretKey is required; ProjectID may be empty
+// for endpoints that don't need it (auth checks, project listing).
+type Options struct {
+	SecretKey string
+	ProjectID string
+	BaseURL   string
+	Version   string
+}
+
+func New(opts Options) *Client {
+	base := opts.BaseURL
+	if base == "" {
+		base = BaseURL
+	}
+	return &Client{
+		http:      &http.Client{Timeout: 30 * time.Second},
+		baseURL:   base,
+		secretKey: opts.SecretKey,
+		projectID: opts.ProjectID,
+		debug:     strings.Contains(os.Getenv(envDebug), "api"),
+		version:   opts.Version,
+	}
+}
+
+// ProjectID returns the configured project id (may be "").
+func (c *Client) ProjectID() string { return c.projectID }
+
+// APIError is returned for non-2xx responses. The body, if it parsed as
+// JSON, is exposed verbatim for downstream rendering.
+type APIError struct {
+	Status     int
+	StatusText string
+	Type       string `json:"type"`
+	Message    string `json:"message"`
+	DocURL     string `json:"doc_url"`
+	Raw        string
+}
+
+func (e *APIError) Error() string {
+	if e.Message != "" {
+		return fmt.Sprintf("api %d %s: %s", e.Status, e.StatusText, e.Message)
+	}
+	return fmt.Sprintf("api %d %s", e.Status, e.StatusText)
+}
+
+// IsNotFound is true when the API returned 404.
+func (e *APIError) IsNotFound() bool { return e.Status == http.StatusNotFound }
+
+// Do issues a JSON request and decodes the response into out.
+//
+// Retries: 429 (respecting Retry-After when present) and 5xx, up to 3
+// attempts with exponential backoff (200ms, 600ms, 1.8s).
+func (c *Client) Do(ctx context.Context, method, path string, body any, out any) error {
+	url := c.baseURL + path
+
+	var bodyBytes []byte
+	if body != nil {
+		var err error
+		bodyBytes, err = json.Marshal(body)
+		if err != nil {
+			return fmt.Errorf("encode request: %w", err)
+		}
+	}
+
+	const maxAttempts = 3
+	backoff := 200 * time.Millisecond
+
+	for attempt := 1; attempt <= maxAttempts; attempt++ {
+		req, err := http.NewRequestWithContext(ctx, method, url, bytes.NewReader(bodyBytes))
+		if err != nil {
+			return err
+		}
+		req.Header.Set("Authorization", "Bearer "+c.secretKey)
+		req.Header.Set("Accept", "application/json")
+		req.Header.Set("User-Agent", userAgent+"/"+c.version)
+		if body != nil {
+			req.Header.Set("Content-Type", "application/json")
+		}
+
+		c.logRequest(req, bodyBytes)
+
+		resp, err := c.http.Do(req)
+		if err != nil {
+			if attempt == maxAttempts {
+				return fmt.Errorf("request: %w", err)
+			}
+			time.Sleep(backoff)
+			backoff *= 3
+			continue
+		}
+
+		respBody, _ := io.ReadAll(resp.Body)
+		resp.Body.Close()
+		c.logResponse(resp, respBody)
+
+		if resp.StatusCode == 429 || resp.StatusCode >= 500 {
+			if attempt == maxAttempts {
+				return decodeError(resp.StatusCode, resp.Status, respBody)
+			}
+			wait := backoff
+			if ra := resp.Header.Get("Retry-After"); ra != "" {
+				if d, perr := time.ParseDuration(ra + "s"); perr == nil {
+					wait = d
+				}
+			}
+			time.Sleep(wait)
+			backoff *= 3
+			continue
+		}
+
+		if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+			return decodeError(resp.StatusCode, resp.Status, respBody)
+		}
+
+		if out == nil || len(respBody) == 0 {
+			return nil
+		}
+		if err := json.Unmarshal(respBody, out); err != nil {
+			return fmt.Errorf("decode response: %w", err)
+		}
+		return nil
+	}
+	return errors.New("exhausted retries")
+}
+
+func decodeError(status int, statusText string, body []byte) error {
+	e := &APIError{Status: status, StatusText: statusText, Raw: string(body)}
+	if len(body) > 0 {
+		_ = json.Unmarshal(body, e)
+	}
+	return e
+}
+
+func (c *Client) logRequest(req *http.Request, body []byte) {
+	if !c.debug {
+		return
+	}
+	fmt.Fprintf(os.Stderr, "→ %s %s\n", req.Method, req.URL)
+	for k, v := range req.Header {
+		val := strings.Join(v, ",")
+		if k == "Authorization" {
+			val = "Bearer ***"
+		}
+		fmt.Fprintf(os.Stderr, "  %s: %s\n", k, val)
+	}
+	if len(body) > 0 {
+		fmt.Fprintf(os.Stderr, "  body: %s\n", string(body))
+	}
+}
+
+func (c *Client) logResponse(resp *http.Response, body []byte) {
+	if !c.debug {
+		return
+	}
+	fmt.Fprintf(os.Stderr, "← %d %s\n", resp.StatusCode, resp.Status)
+	if len(body) > 0 && len(body) < 4096 {
+		fmt.Fprintf(os.Stderr, "  body: %s\n", string(body))
+	}
+}
