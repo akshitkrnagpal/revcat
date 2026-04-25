@@ -11,6 +11,7 @@ import (
 	eventscmd "github.com/akshitkrnagpal/revcat/commands/events"
 	offeringscmd "github.com/akshitkrnagpal/revcat/commands/offerings"
 	packagescmd "github.com/akshitkrnagpal/revcat/commands/packages"
+	productscmd "github.com/akshitkrnagpal/revcat/commands/products"
 	projectscmd "github.com/akshitkrnagpal/revcat/commands/projects"
 	publishcmd "github.com/akshitkrnagpal/revcat/commands/publish"
 	subscriberscmd "github.com/akshitkrnagpal/revcat/commands/subscribers"
@@ -82,6 +83,7 @@ func init() {
 	rootCmd.AddCommand(eventscmd.Cmd)
 	rootCmd.AddCommand(offeringscmd.Cmd)
 	rootCmd.AddCommand(packagescmd.Cmd)
+	rootCmd.AddCommand(productscmd.Cmd)
 	rootCmd.AddCommand(projectscmd.Cmd)
 	rootCmd.AddCommand(publishcmd.Cmd)
 	rootCmd.AddCommand(subscriberscmd.Cmd)
