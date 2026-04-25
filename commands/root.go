@@ -18,6 +18,9 @@ import (
 	purchasescmd "github.com/akshitkrnagpal/revcat/commands/purchases"
 	subscriberscmd "github.com/akshitkrnagpal/revcat/commands/subscribers"
 	subscriptionscmd "github.com/akshitkrnagpal/revcat/commands/subscriptions"
+	paywallscmd "github.com/akshitkrnagpal/revcat/commands/paywalls"
+	virtualcurrenciescmd "github.com/akshitkrnagpal/revcat/commands/virtualcurrencies"
+	webhookscmd "github.com/akshitkrnagpal/revcat/commands/webhooks"
 	versioncmd "github.com/akshitkrnagpal/revcat/commands/version"
 	"github.com/akshitkrnagpal/revcat/internal/output"
 )
@@ -87,11 +90,14 @@ func init() {
 	rootCmd.AddCommand(invoicescmd.Cmd)
 	rootCmd.AddCommand(offeringscmd.Cmd)
 	rootCmd.AddCommand(packagescmd.Cmd)
+	rootCmd.AddCommand(paywallscmd.Cmd)
 	rootCmd.AddCommand(productscmd.Cmd)
 	rootCmd.AddCommand(projectscmd.Cmd)
 	rootCmd.AddCommand(publishcmd.Cmd)
 	rootCmd.AddCommand(purchasescmd.Cmd)
 	rootCmd.AddCommand(subscriberscmd.Cmd)
 	rootCmd.AddCommand(subscriptionscmd.Cmd)
+	rootCmd.AddCommand(virtualcurrenciescmd.Cmd)
+	rootCmd.AddCommand(webhookscmd.Cmd)
 	rootCmd.AddCommand(versioncmd.Cmd(Version))
 }
