@@ -6,6 +6,7 @@ import (
 
 	authcmd "github.com/akshitkrnagpal/revcat/commands/auth"
 	doctorcmd "github.com/akshitkrnagpal/revcat/commands/doctor"
+	subscriberscmd "github.com/akshitkrnagpal/revcat/commands/subscribers"
 	versioncmd "github.com/akshitkrnagpal/revcat/commands/version"
 	"github.com/akshitkrnagpal/revcat/internal/output"
 )
@@ -69,5 +70,6 @@ func init() {
 
 	rootCmd.AddCommand(authcmd.Cmd)
 	rootCmd.AddCommand(doctorcmd.Cmd)
+	rootCmd.AddCommand(subscriberscmd.Cmd)
 	rootCmd.AddCommand(versioncmd.Cmd(Version))
 }
