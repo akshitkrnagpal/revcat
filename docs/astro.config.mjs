@@ -30,7 +30,7 @@ export default defineConfig({
     starlight({
       title: "revcat",
       description:
-        "The RevenueCat CLI. Run your RevenueCat project from the terminal instead of clicking through the dashboard.",
+        "Manage RevenueCat entitlements, offerings, paywalls, customers, webhooks, and audit logs from the terminal. Single static binary, JSON-first when piped.",
       social: [
         {
           icon: "github",
@@ -39,6 +39,12 @@ export default defineConfig({
         },
       ],
       head: [
+        // Social-friendly title + description (longer than the in-app title
+        // for SEO + link previews; opengraph.xyz wants 50-60 / 110-160).
+        { tag: "meta", attrs: { property: "og:title", content: "revcat - the RevenueCat CLI for terminal-first workflows" } },
+        { tag: "meta", attrs: { name: "twitter:title", content: "revcat - the RevenueCat CLI for terminal-first workflows" } },
+        { tag: "meta", attrs: { property: "og:description", content: "Manage RevenueCat entitlements, offerings, paywalls, customers, webhooks, and audit logs from the terminal. Single static binary, JSON-first when piped." } },
+        { tag: "meta", attrs: { name: "twitter:description", content: "Manage RevenueCat entitlements, offerings, paywalls, customers, webhooks, and audit logs from the terminal. Single static binary, JSON-first when piped." } },
         { tag: "meta", attrs: { property: "og:image", content: "https://revcat.vercel.app/og.png" } },
         { tag: "meta", attrs: { property: "og:image:width", content: "1200" } },
         { tag: "meta", attrs: { property: "og:image:height", content: "630" } },
