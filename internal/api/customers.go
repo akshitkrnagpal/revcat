@@ -212,6 +212,51 @@ func (c *Client) SnapshotCustomer(ctx context.Context, customerID string) (*Cust
 	return snap, nil
 }
 
+// GrantPromotionalEntitlement grants the entitlement to a customer for
+// the specified duration. Duration is a human-friendly string ("7d",
+// "1m", "1y", "lifetime"); we translate to RC's expected ISO-8601
+// duration plus the special "lifetime" sentinel.
+type GrantPromotionalRequest struct {
+	Duration  string `json:"duration"`
+	StartTime int64  `json:"start_time_ms,omitempty"`
+	Reason    string `json:"reason,omitempty"`
+}
+
+func (c *Client) GrantPromotionalEntitlement(ctx context.Context, customerID, entitlementID string, req GrantPromotionalRequest) (*ActiveEntitlement, error) {
+	if err := c.requireProject(); err != nil {
+		return nil, err
+	}
+	var out ActiveEntitlement
+	path := c.projectPath("/customers/" + url.PathEscape(customerID) + "/active_entitlements/" + url.PathEscape(entitlementID) + "/grant_promotional")
+	if err := c.Do(ctx, "POST", path, req, &out); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+// RevokePromotionalEntitlement removes a promotional entitlement.
+func (c *Client) RevokePromotionalEntitlement(ctx context.Context, customerID, entitlementID string) error {
+	if err := c.requireProject(); err != nil {
+		return err
+	}
+	path := c.projectPath("/customers/" + url.PathEscape(customerID) + "/active_entitlements/" + url.PathEscape(entitlementID) + "/revoke_promotional")
+	return c.Do(ctx, "POST", path, struct{}{}, nil)
+}
+
+// RefundTransaction issues a refund through the appropriate store. RC's
+// API returns the updated transaction status; we surface it raw.
+func (c *Client) RefundTransaction(ctx context.Context, customerID, transactionID string) (map[string]any, error) {
+	if err := c.requireProject(); err != nil {
+		return nil, err
+	}
+	var out map[string]any
+	path := c.projectPath("/customers/" + url.PathEscape(customerID) + "/transactions/" + url.PathEscape(transactionID) + ":refund")
+	if err := c.Do(ctx, "POST", path, struct{}{}, &out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // paginate is a generic helper for v2's cursor-paginated list endpoints.
 func paginate[T any](ctx context.Context, c *Client, basePath string) ([]T, error) {
 	var all []T
