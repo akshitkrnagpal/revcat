@@ -1,0 +1,66 @@
+version: 2
+
+project_name: revcat
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: revcat
+    main: ./cmd/revcat
+    binary: revcat
+    env:
+      - CGO_ENABLED=0
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w
+      - -X github.com/akshitkrnagpal/revcat/commands.Version={{ .Version }}
+    goos:
+      - darwin
+      - linux
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ignore:
+      - goos: windows
+        goarch: arm64
+
+archives:
+  - id: revcat
+    formats: [tar.gz]
+    name_template: "revcat_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+
+checksum:
+  name_template: "checksums.txt"
+
+snapshot:
+  version_template: "{{ incpatch .Version }}-next"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^chore:"
+
+# Homebrew tap - flip the boolean and create the tap repo when ready.
+brews:
+  - name: revcat
+    skip_upload: true
+    repository:
+      owner: akshitkrnagpal
+      name: homebrew-tap
+    homepage: "https://github.com/akshitkrnagpal/revcat"
+    description: "The RevenueCat CLI"
+    license: "MIT"
+    test: |
+      system "#{bin}/revcat", "version"
+    install: |
+      bin.install "revcat"
