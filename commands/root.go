@@ -9,12 +9,15 @@ import (
 	doctorcmd "github.com/akshitkrnagpal/revcat/commands/doctor"
 	entitlementscmd "github.com/akshitkrnagpal/revcat/commands/entitlements"
 	eventscmd "github.com/akshitkrnagpal/revcat/commands/events"
+	invoicescmd "github.com/akshitkrnagpal/revcat/commands/invoices"
 	offeringscmd "github.com/akshitkrnagpal/revcat/commands/offerings"
 	packagescmd "github.com/akshitkrnagpal/revcat/commands/packages"
 	productscmd "github.com/akshitkrnagpal/revcat/commands/products"
 	projectscmd "github.com/akshitkrnagpal/revcat/commands/projects"
 	publishcmd "github.com/akshitkrnagpal/revcat/commands/publish"
+	purchasescmd "github.com/akshitkrnagpal/revcat/commands/purchases"
 	subscriberscmd "github.com/akshitkrnagpal/revcat/commands/subscribers"
+	subscriptionscmd "github.com/akshitkrnagpal/revcat/commands/subscriptions"
 	versioncmd "github.com/akshitkrnagpal/revcat/commands/version"
 	"github.com/akshitkrnagpal/revcat/internal/output"
 )
@@ -81,11 +84,14 @@ func init() {
 	rootCmd.AddCommand(doctorcmd.Cmd)
 	rootCmd.AddCommand(entitlementscmd.Cmd)
 	rootCmd.AddCommand(eventscmd.Cmd)
+	rootCmd.AddCommand(invoicescmd.Cmd)
 	rootCmd.AddCommand(offeringscmd.Cmd)
 	rootCmd.AddCommand(packagescmd.Cmd)
 	rootCmd.AddCommand(productscmd.Cmd)
 	rootCmd.AddCommand(projectscmd.Cmd)
 	rootCmd.AddCommand(publishcmd.Cmd)
+	rootCmd.AddCommand(purchasescmd.Cmd)
 	rootCmd.AddCommand(subscriberscmd.Cmd)
+	rootCmd.AddCommand(subscriptionscmd.Cmd)
 	rootCmd.AddCommand(versioncmd.Cmd(Version))
 }
