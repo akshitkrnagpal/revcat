@@ -4,12 +4,14 @@ package commands
 import (
 	"github.com/spf13/cobra"
 
+	appscmd "github.com/akshitkrnagpal/revcat/commands/apps"
 	authcmd "github.com/akshitkrnagpal/revcat/commands/auth"
 	doctorcmd "github.com/akshitkrnagpal/revcat/commands/doctor"
 	entitlementscmd "github.com/akshitkrnagpal/revcat/commands/entitlements"
 	eventscmd "github.com/akshitkrnagpal/revcat/commands/events"
 	offeringscmd "github.com/akshitkrnagpal/revcat/commands/offerings"
 	packagescmd "github.com/akshitkrnagpal/revcat/commands/packages"
+	projectscmd "github.com/akshitkrnagpal/revcat/commands/projects"
 	publishcmd "github.com/akshitkrnagpal/revcat/commands/publish"
 	subscriberscmd "github.com/akshitkrnagpal/revcat/commands/subscribers"
 	versioncmd "github.com/akshitkrnagpal/revcat/commands/version"
@@ -73,12 +75,14 @@ func init() {
 	pf.StringVar(&Flags.Profile, "profile", "", "Auth profile name (default: REVCAT_PROFILE or 'default')")
 	pf.BoolVar(&Flags.BypassKeychain, "bypass-keychain", false, "Read/write auth from ./.revcat/config.json instead of OS keychain")
 
+	rootCmd.AddCommand(appscmd.Cmd)
 	rootCmd.AddCommand(authcmd.Cmd)
 	rootCmd.AddCommand(doctorcmd.Cmd)
 	rootCmd.AddCommand(entitlementscmd.Cmd)
 	rootCmd.AddCommand(eventscmd.Cmd)
 	rootCmd.AddCommand(offeringscmd.Cmd)
 	rootCmd.AddCommand(packagescmd.Cmd)
+	rootCmd.AddCommand(projectscmd.Cmd)
 	rootCmd.AddCommand(publishcmd.Cmd)
 	rootCmd.AddCommand(subscriberscmd.Cmd)
 	rootCmd.AddCommand(versioncmd.Cmd(Version))

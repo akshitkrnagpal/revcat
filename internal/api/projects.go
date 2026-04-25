@@ -41,3 +41,62 @@ func (c *Client) GetProject(ctx context.Context, id string) (*Project, error) {
 	}
 	return &p, nil
 }
+
+// App is a per-platform app inside a project (one per bundle id / package).
+type App struct {
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	Type        string `json:"type"`
+	BundleID    string `json:"bundle_id,omitempty"`
+	PackageName string `json:"package_name,omitempty"`
+	CreatedAt   int64  `json:"created_at"`
+	ProjectID   string `json:"project_id,omitempty"`
+}
+
+// PublicAPIKey is the SDK-side public key for an app.
+type PublicAPIKey struct {
+	ID    string `json:"id"`
+	Label string `json:"label"`
+	Key   string `json:"key"`
+}
+
+// ListApps pages through every app in the active project.
+func (c *Client) ListApps(ctx context.Context) ([]App, error) {
+	if err := c.requireProject(); err != nil {
+		return nil, err
+	}
+	return paginate[App](ctx, c, c.projectPath("/apps"))
+}
+
+// GetApp fetches one app by id.
+func (c *Client) GetApp(ctx context.Context, appID string) (*App, error) {
+	if err := c.requireProject(); err != nil {
+		return nil, err
+	}
+	var a App
+	if err := c.Do(ctx, "GET", c.projectPath("/apps/"+appID), nil, &a); err != nil {
+		return nil, err
+	}
+	return &a, nil
+}
+
+// ListPublicAPIKeys returns the SDK-side keys for an app.
+func (c *Client) ListPublicAPIKeys(ctx context.Context, appID string) ([]PublicAPIKey, error) {
+	if err := c.requireProject(); err != nil {
+		return nil, err
+	}
+	return paginate[PublicAPIKey](ctx, c, c.projectPath("/apps/"+appID+"/public_api_keys"))
+}
+
+// GetStoreKitConfig returns the StoreKit configuration for an app (iOS).
+// Returned as a generic map because the schema is broad and changes often.
+func (c *Client) GetStoreKitConfig(ctx context.Context, appID string) (map[string]any, error) {
+	if err := c.requireProject(); err != nil {
+		return nil, err
+	}
+	var out map[string]any
+	if err := c.Do(ctx, "GET", c.projectPath("/apps/"+appID+"/store_kit_config"), nil, &out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
