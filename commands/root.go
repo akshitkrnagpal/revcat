@@ -7,6 +7,7 @@ import (
 	authcmd "github.com/akshitkrnagpal/revcat/commands/auth"
 	doctorcmd "github.com/akshitkrnagpal/revcat/commands/doctor"
 	entitlementscmd "github.com/akshitkrnagpal/revcat/commands/entitlements"
+	eventscmd "github.com/akshitkrnagpal/revcat/commands/events"
 	offeringscmd "github.com/akshitkrnagpal/revcat/commands/offerings"
 	packagescmd "github.com/akshitkrnagpal/revcat/commands/packages"
 	publishcmd "github.com/akshitkrnagpal/revcat/commands/publish"
@@ -75,6 +76,7 @@ func init() {
 	rootCmd.AddCommand(authcmd.Cmd)
 	rootCmd.AddCommand(doctorcmd.Cmd)
 	rootCmd.AddCommand(entitlementscmd.Cmd)
+	rootCmd.AddCommand(eventscmd.Cmd)
 	rootCmd.AddCommand(offeringscmd.Cmd)
 	rootCmd.AddCommand(packagescmd.Cmd)
 	rootCmd.AddCommand(publishcmd.Cmd)
