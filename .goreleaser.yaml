@@ -50,13 +50,14 @@ changelog:
       - "^test:"
       - "^chore:"
 
-# Homebrew tap - flip the boolean and create the tap repo when ready.
+# Homebrew tap at github.com/akshitkrnagpal/homebrew-tap.
 brews:
   - name: revcat
-    skip_upload: true
     repository:
       owner: akshitkrnagpal
       name: homebrew-tap
+      branch: main
+    directory: Formula
     homepage: "https://github.com/akshitkrnagpal/revcat"
     description: "The RevenueCat CLI"
     license: "MIT"

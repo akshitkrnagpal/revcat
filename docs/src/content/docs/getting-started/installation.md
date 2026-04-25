@@ -5,15 +5,15 @@ description: Install revcat via Homebrew, go install, or a pre-built binary.
 
 revcat is a single static Go binary. Install it however you prefer.
 
-## Homebrew (planned, v0.1+)
+## Homebrew
 
 ```sh
 brew install akshitkrnagpal/tap/revcat
 ```
 
-> The Homebrew tap will land alongside v0.1. Until then, use `go install` or grab a binary from GitHub Releases.
+The tap lives at <https://github.com/akshitkrnagpal/homebrew-tap> and is updated by every release.
 
-## `go install` (today)
+## `go install`
 
 Requires Go 1.23 or later.
 
@@ -23,9 +23,9 @@ go install github.com/akshitkrnagpal/revcat/cmd/revcat@latest
 
 The binary lands in `$(go env GOPATH)/bin`; make sure that's on your `PATH`.
 
-## Pre-built binaries (planned, v0.1+)
+## Pre-built binaries
 
-Each release will publish binaries for macOS / Linux / Windows on amd64 and arm64. Grab the matching archive from [GitHub Releases](https://github.com/akshitkrnagpal/revcat/releases), unpack, and put `revcat` on your `PATH`.
+Every release publishes binaries for macOS / Linux / Windows on amd64 and arm64. Grab the matching archive from [GitHub Releases](https://github.com/akshitkrnagpal/revcat/releases), unpack, and put `revcat` on your `PATH`.
 
 ## Verify
 

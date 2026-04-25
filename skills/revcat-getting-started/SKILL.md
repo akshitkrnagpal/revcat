@@ -13,12 +13,13 @@ Docs: <https://revcat.vercel.app>
 ## Install
 
 ```sh
-# Today
-go install github.com/akshitkrnagpal/revcat/cmd/revcat@latest
-
-# v0.1+ (Homebrew tap, GitHub release binaries)
 brew install akshitkrnagpal/tap/revcat
+
+# or, from source (Go 1.23+)
+go install github.com/akshitkrnagpal/revcat/cmd/revcat@latest
 ```
+
+Pre-built binaries for every platform are on the [GitHub Releases page](https://github.com/akshitkrnagpal/revcat/releases).
 
 ## Auth (one-time)
 

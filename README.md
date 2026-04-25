@@ -18,13 +18,14 @@ Output is a colored table when you're at a terminal and JSON when you're piping 
 
 ## Install
 
-From source (Go 1.23+):
-
 ```sh
+brew install akshitkrnagpal/tap/revcat
+
+# or, from source (Go 1.23+)
 go install github.com/akshitkrnagpal/revcat/cmd/revcat@latest
 ```
 
-Homebrew + GitHub release binaries land with v0.1.
+Pre-built binaries for every platform are on the [Releases page](https://github.com/akshitkrnagpal/revcat/releases).
 
 ## Auth
 
