@@ -36,19 +36,48 @@ func (c *Client) ListOfferings(ctx context.Context) ([]Offering, error) {
 	return paginate[Offering](ctx, c, c.projectPath("/offerings"))
 }
 
-// GetOffering fetches a single offering. If withPackages is true the
-// packages list is fetched in a follow-up call.
-func (c *Client) GetOffering(ctx context.Context, lookupKey string, withPackages bool) (*Offering, error) {
+// ResolveOfferingID accepts either a system id (`ofr...`) or a
+// human-friendly lookup_key (`default`) and returns the system id. If the
+// input is already a system id we still verify it's reachable.
+func (c *Client) ResolveOfferingID(ctx context.Context, idOrKey string) (string, error) {
+	if err := c.requireProject(); err != nil {
+		return "", err
+	}
+	// Try as-is. If RC accepts it (real id, or accepts lookup_key), we're done.
+	var probe Offering
+	if err := c.Do(ctx, "GET", c.projectPath("/offerings/"+url.PathEscape(idOrKey)), nil, &probe); err == nil {
+		return probe.ID, nil
+	}
+	// Fall through: list and match lookup_key.
+	all, err := c.ListOfferings(ctx)
+	if err != nil {
+		return "", err
+	}
+	for _, o := range all {
+		if o.LookupKey == idOrKey || o.ID == idOrKey {
+			return o.ID, nil
+		}
+	}
+	return "", &APIError{Status: 404, StatusText: "Not Found", Message: "no offering with id or lookup_key " + idOrKey}
+}
+
+// GetOffering fetches a single offering. Accepts either a system id or a
+// lookup_key and resolves to the id internally.
+func (c *Client) GetOffering(ctx context.Context, idOrKey string, withPackages bool) (*Offering, error) {
 	if err := c.requireProject(); err != nil {
 		return nil, err
 	}
+	id, err := c.ResolveOfferingID(ctx, idOrKey)
+	if err != nil {
+		return nil, err
+	}
 	var out Offering
-	path := c.projectPath("/offerings/" + url.PathEscape(lookupKey))
+	path := c.projectPath("/offerings/" + url.PathEscape(id))
 	if err := c.Do(ctx, "GET", path, nil, &out); err != nil {
 		return nil, err
 	}
 	if withPackages {
-		pkgs, err := c.ListPackages(ctx, lookupKey)
+		pkgs, err := c.ListPackages(ctx, id)
 		if err != nil {
 			return &out, err
 		}
@@ -57,23 +86,32 @@ func (c *Client) GetOffering(ctx context.Context, lookupKey string, withPackages
 	return &out, nil
 }
 
-// ListPackages pages through the packages in an offering.
-func (c *Client) ListPackages(ctx context.Context, offeringLookupKey string) ([]Package, error) {
+// ListPackages pages through the packages in an offering. Accepts either
+// the offering's system id or its lookup_key.
+func (c *Client) ListPackages(ctx context.Context, offeringIDOrKey string) ([]Package, error) {
 	if err := c.requireProject(); err != nil {
 		return nil, err
 	}
-	return paginate[Package](ctx, c, c.projectPath("/offerings/"+url.PathEscape(offeringLookupKey)+"/packages"))
+	id, err := c.ResolveOfferingID(ctx, offeringIDOrKey)
+	if err != nil {
+		return nil, err
+	}
+	return paginate[Package](ctx, c, c.projectPath("/offerings/"+url.PathEscape(id)+"/packages"))
 }
 
 // SetCurrentOffering promotes the named offering to current. The v2
-// docs model this as an offering update with `is_current: true`, not a
-// dedicated action. Wraps POST /offerings/{id}.
-func (c *Client) SetCurrentOffering(ctx context.Context, lookupKey string) (*Offering, error) {
+// docs model this as an offering update with `is_current: true`.
+// Wraps POST /offerings/{id}.
+func (c *Client) SetCurrentOffering(ctx context.Context, idOrKey string) (*Offering, error) {
 	if err := c.requireProject(); err != nil {
 		return nil, err
 	}
+	id, err := c.ResolveOfferingID(ctx, idOrKey)
+	if err != nil {
+		return nil, err
+	}
 	var out Offering
-	path := c.projectPath("/offerings/" + url.PathEscape(lookupKey))
+	path := c.projectPath("/offerings/" + url.PathEscape(id))
 	body := map[string]any{"is_current": true}
 	if err := c.Do(ctx, "POST", path, body, &out); err != nil {
 		return nil, err
@@ -81,30 +119,33 @@ func (c *Client) SetCurrentOffering(ctx context.Context, lookupKey string) (*Off
 	return &out, nil
 }
 
-// GetPaywall returns the raw paywall config json for an offering. Returned
-// as a generic map so we don't have to model RC's evolving paywalls v2
-// schema in revcat just to ship publish.
-func (c *Client) GetPaywall(ctx context.Context, offeringLookupKey string) (map[string]any, error) {
+// GetPaywall returns the raw paywall config for an offering.
+func (c *Client) GetPaywall(ctx context.Context, idOrKey string) (map[string]any, error) {
 	if err := c.requireProject(); err != nil {
 		return nil, err
 	}
+	id, err := c.ResolveOfferingID(ctx, idOrKey)
+	if err != nil {
+		return nil, err
+	}
 	var out map[string]any
-	path := c.projectPath("/offerings/" + url.PathEscape(offeringLookupKey) + "/paywall")
+	path := c.projectPath("/offerings/" + url.PathEscape(id) + "/paywall")
 	if err := c.Do(ctx, "GET", path, nil, &out); err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// PutPaywall replaces the paywall config for an offering with the supplied
-// json blob. Validation is server-side; we pass the body through verbatim
-// after a json.Marshal round-trip so a typo in the file is caught before
-// the network call.
-func (c *Client) PutPaywall(ctx context.Context, offeringLookupKey string, body map[string]any) error {
+// PutPaywall replaces the paywall config for an offering.
+func (c *Client) PutPaywall(ctx context.Context, idOrKey string, body map[string]any) error {
 	if err := c.requireProject(); err != nil {
 		return err
 	}
-	path := c.projectPath("/offerings/" + url.PathEscape(offeringLookupKey) + "/paywall")
+	id, err := c.ResolveOfferingID(ctx, idOrKey)
+	if err != nil {
+		return err
+	}
+	path := c.projectPath("/offerings/" + url.PathEscape(id) + "/paywall")
 	return c.Do(ctx, "PUT", path, body, nil)
 }
 
@@ -121,12 +162,16 @@ func (c *Client) CreateOffering(ctx context.Context, body map[string]any) (*Offe
 }
 
 // UpdateOffering partial-updates an offering.
-func (c *Client) UpdateOffering(ctx context.Context, lookupKey string, body map[string]any) (*Offering, error) {
+func (c *Client) UpdateOffering(ctx context.Context, idOrKey string, body map[string]any) (*Offering, error) {
 	if err := c.requireProject(); err != nil {
 		return nil, err
 	}
+	id, err := c.ResolveOfferingID(ctx, idOrKey)
+	if err != nil {
+		return nil, err
+	}
 	var o Offering
-	path := c.projectPath("/offerings/" + url.PathEscape(lookupKey))
+	path := c.projectPath("/offerings/" + url.PathEscape(id))
 	if err := c.Do(ctx, "POST", path, body, &o); err != nil {
 		return nil, err
 	}
@@ -134,23 +179,31 @@ func (c *Client) UpdateOffering(ctx context.Context, lookupKey string, body map[
 }
 
 // DeleteOffering removes an offering.
-func (c *Client) DeleteOffering(ctx context.Context, lookupKey string) error {
+func (c *Client) DeleteOffering(ctx context.Context, idOrKey string) error {
 	if err := c.requireProject(); err != nil {
 		return err
 	}
-	return c.Do(ctx, "DELETE", c.projectPath("/offerings/"+url.PathEscape(lookupKey)), nil, nil)
+	id, err := c.ResolveOfferingID(ctx, idOrKey)
+	if err != nil {
+		return err
+	}
+	return c.Do(ctx, "DELETE", c.projectPath("/offerings/"+url.PathEscape(id)), nil, nil)
 }
 
 // ArchiveOffering toggles archive state for an offering.
-func (c *Client) ArchiveOffering(ctx context.Context, lookupKey string, archive bool) error {
+func (c *Client) ArchiveOffering(ctx context.Context, idOrKey string, archive bool) error {
 	if err := c.requireProject(); err != nil {
+		return err
+	}
+	id, err := c.ResolveOfferingID(ctx, idOrKey)
+	if err != nil {
 		return err
 	}
 	action := "archive"
 	if !archive {
 		action = "unarchive"
 	}
-	path := c.projectPath("/offerings/" + url.PathEscape(lookupKey) + "/actions/" + action)
+	path := c.projectPath("/offerings/" + url.PathEscape(id) + "/actions/" + action)
 	return c.Do(ctx, "POST", path, struct{}{}, nil)
 }
 

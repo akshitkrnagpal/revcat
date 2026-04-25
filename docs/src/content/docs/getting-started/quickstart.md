@@ -34,10 +34,10 @@ Inspect a customer:
 revcat subscribers info app_user_123
 ```
 
-Tail purchases live:
+Show your headline numbers:
 
 ```sh
-revcat events tail --type INITIAL_PURCHASE,CANCELLATION
+revcat metrics overview
 ```
 
 Promote an offering with a fresh paywall:

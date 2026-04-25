@@ -100,3 +100,25 @@ func (c *Client) GetStoreKitConfig(ctx context.Context, appID string) (map[strin
 	}
 	return out, nil
 }
+
+// AuditLogEntry is a row from the project's audit log.
+type AuditLogEntry struct {
+	ID               string         `json:"id"`
+	OccurredAt       int64          `json:"occurred_at"`
+	ActionType       string         `json:"action_type"`
+	ActorType        string         `json:"actor_type"`
+	ActorIdentifier  string         `json:"actor_identifier"`
+	TargetType       string         `json:"target_type"`
+	TargetIdentifier string         `json:"target_identifier"`
+	AdditionalData   map[string]any `json:"additional_data,omitempty"`
+}
+
+// ListAuditLogs pages every audit log entry the active key can see.
+// Available with normal project secret keys (despite earlier docs that
+// claimed partner-tier only).
+func (c *Client) ListAuditLogs(ctx context.Context) ([]AuditLogEntry, error) {
+	if err := c.requireProject(); err != nil {
+		return nil, err
+	}
+	return paginate[AuditLogEntry](ctx, c, c.projectPath("/audit_logs"))
+}

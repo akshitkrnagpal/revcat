@@ -44,12 +44,12 @@ revcat is TTY-aware:
 | Interactive terminal | Tables (lipgloss + color) |
 | Piped or redirected | JSON |
 
-Force a format with `--output table|json|csv|markdown`. `--pretty` indents JSON. `revcat events tail` emits one JSON object per line in JSON mode (ndjson) so it stays parseable mid-stream.
+Force a format with `--output table|json|csv|markdown`. `--pretty` indents JSON.
 
 ## Debugging
 
 ```sh
-REVCAT_DEBUG=api revcat events list   # full request/response, key redacted
+REVCAT_DEBUG=api revcat metrics overview   # full request/response, key redacted
 revcat doctor                         # top-level health check
 revcat auth doctor                    # auth-specific
 ```

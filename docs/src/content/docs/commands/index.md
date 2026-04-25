@@ -3,7 +3,7 @@ title: Commands
 description: Reference for every revcat subcommand.
 ---
 
-revcat is organized by RevenueCat resource: customers, offerings, paywalls, events, etc. Each top-level group has read commands (`list`, `view`) and write commands (`create`, `update`, `delete`, plus action verbs like `attach`, `archive`, `refund`).
+revcat is organized by RevenueCat resource: customers, offerings, paywalls, etc. Each top-level group has read commands (`list`, `view`) and write commands (`create`, `update`, `delete`, plus action verbs like `attach`, `archive`, `refund`).
 
 ## Catalog
 
@@ -30,9 +30,9 @@ revcat is organized by RevenueCat resource: customers, offerings, paywalls, even
 
 | Group | Reads | Writes |
 | --- | --- | --- |
-| [`events`](/commands/events/) | `list`, `tail` | - |
 | [`metrics`](/commands/metrics/) | `overview` | - |
 | [`charts`](/commands/charts/) | `get`, `options` | - |
+| [`audit-logs`](/commands/audit-logs/) | `list` | - |
 
 ## Integrations
 

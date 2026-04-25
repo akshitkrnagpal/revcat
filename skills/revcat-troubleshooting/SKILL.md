@@ -59,22 +59,12 @@ revcat hashes the file with sorted-key canonicalization and compares it to the l
 - Inspect the live paywall: pipe `revcat publish offering <id> --paywall ./file.json --dry-run` and read the plan.
 - Diff against the live paywall manually: pull it via `revcat paywalls list` then `revcat paywalls view <id>`.
 
-## `revcat events tail` outputs nothing
+## `revcat <resource> view <key>` returns 404
 
-revcat starts the tail at `--since` (default `5m`). If your project genuinely hasn't had events in that window, nothing prints.
+The v2 API requires a system id (`ofrng...`, `entl...`, `prod...`) for path lookups. revcat resolves human-friendly lookup_keys to ids by listing first - if listing returns the resource and the lookup_key matches, view will succeed. If you still see 404:
 
-- Widen the window: `--since 24h`.
-- Drop type filters: remove `--type` to confirm any event flows.
-- Sandbox sessions are still emitted; check `is_sandbox` in JSON mode.
-
-## ndjson piping breaks `jq`
-
-When piped, `revcat events tail` emits one JSON object per line. Some `jq` invocations expect a single document. Use `jq -c` or stream mode:
-
-```sh
-revcat events tail --output json | jq -c '.type'
-revcat events tail --output json | jq -c 'select(.price > 9.99)'
-```
+- Run the list command and confirm the resource is actually there: `revcat offerings list`, `revcat entitlements list`, etc.
+- Try the system id directly (the `id` column in list output).
 
 ## "input too large" on `--file`
 
@@ -86,5 +76,6 @@ revcat caps JSON file input at 4 MB to defend against accidental binary blobs. I
 
 ## Where revcat does NOT work
 
-- Project create, app CRUD, audit logs, collaborators - need a partner-tier API key.
+- Project create, app CRUD, collaborators - need a partner-tier API key.
+- An events firehose - RC delivers lifecycle events via webhooks (`revcat webhooks`), not a REST stream.
 - Anything not in `revcat <group> --help` - revcat tracks v2; v1-only endpoints are not wrapped.

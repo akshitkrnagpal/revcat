@@ -21,12 +21,17 @@ Charts mirror the dashboard graphs: revenue, active subscribers, conversion, MRR
 | `--period day\|week\|month` | Bucket granularity |
 | `--filter key=value` | Filter on a dimension (repeatable) |
 
+## Available chart names
+
+`actives`, `actives_movement`, `actives_new`, `arr`, `churn`, `cohort_explorer`, `conversion_to_paying`, `customers_new`, `ltv_per_customer`, `ltv_per_paying_customer`, `mrr`, `mrr_movement`, `refund_rate`, `revenue`, `subscription_retention`, `subscription_status`, `trials`, `trials_movement`.
+
 ## Examples
 
 ```sh
-revcat charts options revenue
+revcat charts options actives
 revcat charts get revenue --start 2026-04-01 --end 2026-04-30 --period day
-revcat charts get active_subscribers --filter store=app_store
+revcat charts get actives --filter store=app_store
+revcat charts get mrr --period month
 ```
 
 `revcat charts get` returns the raw RC v2 chart payload.

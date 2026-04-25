@@ -5,9 +5,8 @@ The RevenueCat CLI. Run your RevenueCat project from the terminal instead of cli
 ```sh
 revcat auth login --name my-app --secret-key sk_xxx
 revcat subscribers info app_user_123
-revcat events tail --type INITIAL_PURCHASE,CANCELLATION
-revcat publish offering pro --paywall ./paywalls/pro.json
 revcat metrics overview
+revcat publish offering pro --paywall ./paywalls/pro.json
 ```
 
 ## Why
@@ -74,9 +73,9 @@ revcat invoices           view
 
 revcat publish offering   <id> [--paywall ./paywall.json] [--current] [-y] [--dry-run]
 
-revcat events             list | tail
 revcat metrics            overview
 revcat charts             get <name> | options <name>
+revcat audit-logs         list
 
 revcat webhooks           list | view | create | update | delete
 revcat virtual-currencies list | view | create | update | delete | archive | unarchive
@@ -96,8 +95,6 @@ By default, output is TTY-aware:
 
 Override with `--output table|json|csv|markdown` or env `REVCAT_DEFAULT_OUTPUT`. Use `--pretty` for indented JSON.
 
-`revcat events tail` emits one JSON object per line in JSON mode (ndjson), so you can pipe into `jq` mid-stream.
-
 ## Examples
 
 Debug a customer report from support:
@@ -110,12 +107,6 @@ Find a subscription from a store id (App Store transaction id, Play purchase tok
 
 ```sh
 revcat subscriptions search ABC123XYZ
-```
-
-Tail purchases and cancellations during a launch:
-
-```sh
-revcat events tail --type INITIAL_PURCHASE,CANCELLATION
 ```
 
 Promote a new paywall to current:
@@ -136,17 +127,16 @@ Wire entitlement <-> product:
 revcat entitlements attach premium prod_app_monthly prod_app_annual
 ```
 
-Compute a daily revenue summary in CI:
-
-```sh
-revcat events list --type INITIAL_PURCHASE,RENEWAL --since 24h --output json | \
-    jq '[.[] | .price] | add'
-```
-
 Show the dashboard headline numbers:
 
 ```sh
 revcat metrics overview
+```
+
+Audit who changed what:
+
+```sh
+revcat audit-logs list
 ```
 
 ## Out of scope
@@ -155,17 +145,18 @@ A small slice of the v2 API is gated behind a project-management / partner-tier 
 
 - `POST /projects` (project create)
 - App CRUD (`POST /apps`, `POST /apps/{id}`, `DELETE /apps/{id}`)
-- `GET /audit_logs`
 - `GET /collaborators`
 
 Manage these in the dashboard.
 
+RC also has no REST events firehose; lifecycle events (purchases, renewals, cancellations) are delivered via webhooks. Use `revcat webhooks create` to subscribe your endpoint.
+
 ## Debug
 
 ```sh
-REVCAT_DEBUG=api revcat events list      # logs full request/response (key redacted)
-revcat doctor                            # top-level health check
-revcat auth doctor                       # auth-specific
+REVCAT_DEBUG=api revcat metrics overview     # logs full request/response (key redacted)
+revcat doctor                                # top-level health check
+revcat auth doctor                           # auth-specific
 ```
 
 ## Documentation

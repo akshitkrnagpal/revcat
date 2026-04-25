@@ -31,8 +31,8 @@ revcat auth login --name my-app --secret-key sk_xxx
 # debug a customer
 revcat subscribers info app_user_123
 
-# tail purchases live
-revcat events tail --type INITIAL_PURCHASE,CANCELLATION
+# headline metrics
+revcat metrics overview
 
 # deploy a paywall
 revcat publish offering pro --paywall ./paywalls/pro.json
@@ -40,7 +40,7 @@ revcat publish offering pro --paywall ./paywalls/pro.json
 
 <CardGrid>
   <Card title="Imperative verbs" icon="rocket">
-    `publish`, `grant`, `refund`, `tail` - one command, one workflow. No
+    `publish`, `grant`, `refund`, `transfer` - one command, one workflow. No
     declarative state files, no plan/apply ceremony.
   </Card>
   <Card title="JSON-first" icon="document">
@@ -53,8 +53,8 @@ revcat publish offering pro --paywall ./paywalls/pro.json
   </Card>
   <Card title="Full v2 coverage" icon="approve-check">
     Every v2 endpoint a per-project secret key can reach is wrapped:
-    entitlements, offerings, products, paywalls, customers, events,
-    metrics, webhooks, virtual currencies.
+    entitlements, offerings, products, paywalls, customers, metrics,
+    charts, audit logs, webhooks, virtual currencies.
   </Card>
 </CardGrid>
 

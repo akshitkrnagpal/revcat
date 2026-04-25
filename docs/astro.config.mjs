@@ -4,11 +4,11 @@ import starlight from "@astrojs/starlight";
 
 const commands = [
   { label: "apps", slug: "commands/apps" },
+  { label: "audit-logs", slug: "commands/audit-logs" },
   { label: "auth", slug: "commands/auth" },
   { label: "charts", slug: "commands/charts" },
   { label: "doctor", slug: "commands/doctor" },
   { label: "entitlements", slug: "commands/entitlements" },
-  { label: "events", slug: "commands/events" },
   { label: "invoices", slug: "commands/invoices" },
   { label: "metrics", slug: "commands/metrics" },
   { label: "offerings", slug: "commands/offerings" },

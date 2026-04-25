@@ -34,7 +34,7 @@ For CI / Docker (no keychain), use one of:
 
 ```sh
 # A: env var only (one-shot)
-REVCAT_API_KEY=sk_xxx revcat events list
+REVCAT_API_KEY=sk_xxx revcat metrics overview
 
 # B: write a profile to ./.revcat/config.json (auto-gitignored)
 revcat auth login --bypass-keychain --name ci --secret-key sk_xxx --no-verify
@@ -53,7 +53,7 @@ Resources (CRUD + actions):
 
 Activity:
 
-- `events` (list/tail), `metrics overview`, `charts get/options`
+- `metrics overview`, `charts get/options`, `audit-logs list`
 
 Verb-orchestrators:
 
@@ -75,16 +75,17 @@ Auth + housekeeping:
 
 - `POST /projects` (project create) - partner-tier key
 - App CRUD (`POST /apps`, etc.) - partner-tier key
-- `GET /audit_logs`, `GET /collaborators` - partner-tier key
+- `GET /collaborators` - partner-tier key
+- An events firehose - RC delivers lifecycle events via webhooks, not a REST stream. Use `revcat webhooks create` to register your endpoint.
 
-Manage those in the dashboard. Everything else a project secret key can do is wrapped.
+Manage the partner-tier items in the dashboard. Everything else a project secret key can do is wrapped.
 
 ## First useful commands
 
 ```sh
 revcat doctor                              # is everything OK?
 revcat subscribers info app_user_123        # debug a customer
-revcat events tail                          # live event stream
 revcat metrics overview                     # headline numbers
 revcat offerings list                       # catalog
+revcat audit-logs list                      # who changed what
 ```

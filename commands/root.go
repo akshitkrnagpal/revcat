@@ -5,10 +5,10 @@ import (
 	"github.com/spf13/cobra"
 
 	appscmd "github.com/akshitkrnagpal/revcat/commands/apps"
+	auditlogscmd "github.com/akshitkrnagpal/revcat/commands/auditlogs"
 	authcmd "github.com/akshitkrnagpal/revcat/commands/auth"
 	doctorcmd "github.com/akshitkrnagpal/revcat/commands/doctor"
 	entitlementscmd "github.com/akshitkrnagpal/revcat/commands/entitlements"
-	eventscmd "github.com/akshitkrnagpal/revcat/commands/events"
 	invoicescmd "github.com/akshitkrnagpal/revcat/commands/invoices"
 	metricscmd "github.com/akshitkrnagpal/revcat/commands/metrics"
 	offeringscmd "github.com/akshitkrnagpal/revcat/commands/offerings"
@@ -84,10 +84,10 @@ func init() {
 	pf.BoolVar(&Flags.BypassKeychain, "bypass-keychain", false, "Read/write auth from ./.revcat/config.json instead of OS keychain")
 
 	rootCmd.AddCommand(appscmd.Cmd)
+	rootCmd.AddCommand(auditlogscmd.Cmd)
 	rootCmd.AddCommand(authcmd.Cmd)
 	rootCmd.AddCommand(doctorcmd.Cmd)
 	rootCmd.AddCommand(entitlementscmd.Cmd)
-	rootCmd.AddCommand(eventscmd.Cmd)
 	rootCmd.AddCommand(invoicescmd.Cmd)
 	rootCmd.AddCommand(metricscmd.Cmd)
 	rootCmd.AddCommand(metricscmd.ChartsCmd)

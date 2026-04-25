@@ -354,7 +354,7 @@ func (c *Client) ListInvoices(ctx context.Context, customerID string) ([]map[str
 
 // paginate is a generic helper for v2's cursor-paginated list endpoints.
 func paginate[T any](ctx context.Context, c *Client, basePath string) ([]T, error) {
-	var all []T
+	all := []T{} // never nil; "no items" should JSON-encode as [] not null
 	path := basePath + "?limit=100"
 	for {
 		var page listResp[T]

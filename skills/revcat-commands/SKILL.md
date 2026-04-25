@@ -1,6 +1,6 @@
 ---
 name: revcat-commands
-description: Use when constructing a revcat command. Reference for every subcommand with real syntax and examples for entitlements, offerings, products, paywalls, subscribers, subscriptions, events, webhooks, metrics. Triggers on "revcat <command>", "how do I X with revcat".
+description: Use when constructing a revcat command. Reference for every subcommand with real syntax and examples for entitlements, offerings, products, paywalls, subscribers, subscriptions, webhooks, metrics, charts, audit-logs. Triggers on "revcat <command>", "how do I X with revcat".
 ---
 
 # revcat - command reference
@@ -132,17 +132,18 @@ revcat invoices view <invoice_id>                # raw JSON
 ## Activity
 
 ```sh
-revcat events list [--type T1,T2] [--since 1h|RFC3339] [--limit 100]
-revcat events tail [--type T1,T2] [--since 1h] [--interval 5s]   # ndjson when piped
-
 revcat metrics overview
 
 revcat charts options <chart_name>
 revcat charts get <chart_name> [--start YYYY-MM-DD] [--end YYYY-MM-DD] \
     [--period day|week|month] [--filter k=v ...]
+
+revcat audit-logs list
 ```
 
-Common event types: `INITIAL_PURCHASE`, `RENEWAL`, `CANCELLATION`, `EXPIRATION`, `TRIAL_STARTED`, `TRIAL_CONVERTED`, `REFUND`, `BILLING_ISSUE`, `PRODUCT_CHANGE`.
+Valid chart names: `actives`, `actives_movement`, `actives_new`, `arr`, `churn`, `cohort_explorer`, `conversion_to_paying`, `customers_new`, `ltv_per_customer`, `ltv_per_paying_customer`, `mrr`, `mrr_movement`, `refund_rate`, `revenue`, `subscription_retention`, `subscription_status`, `trials`, `trials_movement`.
+
+Lifecycle events (purchases, renewals, cancellations, refunds, ...) are NOT exposed via REST. Use `revcat webhooks create` to subscribe your endpoint to them. Common event types delivered via webhook: `INITIAL_PURCHASE`, `RENEWAL`, `CANCELLATION`, `EXPIRATION`, `TRIAL_STARTED`, `TRIAL_CONVERTED`, `REFUND`, `BILLING_ISSUE`, `PRODUCT_CHANGE`.
 
 ## Verb-orchestrator
 

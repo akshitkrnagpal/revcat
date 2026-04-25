@@ -10,8 +10,9 @@ Source of truth: <https://www.revenuecat.com/docs/api-v2>.
 
 ## Headline
 
-- ~89 of ~95 documented v2 operations covered.
-- Remaining ~6 require a project-management / partner-tier key and are out of scope.
+- Every v2 operation reachable with a per-project secret key is wrapped.
+- A small slice (project create, app CRUD, collaborators) needs a partner-tier key and is out of scope.
+- RC v2 has no REST events firehose; lifecycle events are webhook-delivered. revcat exposes webhook CRUD; subscribe your own endpoint with `revcat webhooks create`.
 
 ## Coverage
 
@@ -148,11 +149,11 @@ Source of truth: <https://www.revenuecat.com/docs/api-v2>.
 | --- | --- |
 | `GET /invoices/{id}` | `revcat invoices view` |
 
-### Events
+### Audit log
 
 | API operation | revcat |
 | --- | --- |
-| `GET /events` | `revcat events list`, `revcat events tail` |
+| `GET /audit_logs` | `revcat audit-logs list` |
 
 ### Webhooks
 
@@ -188,7 +189,10 @@ Source of truth: <https://www.revenuecat.com/docs/api-v2>.
 
 - `POST /projects` - project create
 - App CRUD (`POST /apps`, `POST /apps/{id}`, `DELETE /apps/{id}`)
-- `GET /audit_logs`
 - `GET /collaborators`
+
+## Not exposed by v2 REST
+
+- An events firehose. RC delivers lifecycle events (purchases, renewals, cancellations, refunds, ...) via webhooks. revcat covers webhook CRUD; subscribe your endpoint with `revcat webhooks create`.
 
 These need a project-management / partner-tier API key. revcat targets the per-project secret key, so they live in the dashboard.
