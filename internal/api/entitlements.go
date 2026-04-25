@@ -37,3 +37,77 @@ func (c *Client) GetEntitlement(ctx context.Context, lookupKey string) (*Entitle
 	}
 	return &out, nil
 }
+
+// CreateEntitlement creates a new entitlement.
+func (c *Client) CreateEntitlement(ctx context.Context, body map[string]any) (*Entitlement, error) {
+	if err := c.requireProject(); err != nil {
+		return nil, err
+	}
+	var out Entitlement
+	if err := c.Do(ctx, "POST", c.projectPath("/entitlements"), body, &out); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+// UpdateEntitlement partial-updates an entitlement.
+func (c *Client) UpdateEntitlement(ctx context.Context, lookupKey string, body map[string]any) (*Entitlement, error) {
+	if err := c.requireProject(); err != nil {
+		return nil, err
+	}
+	var out Entitlement
+	path := c.projectPath("/entitlements/" + url.PathEscape(lookupKey))
+	if err := c.Do(ctx, "POST", path, body, &out); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+// DeleteEntitlement removes an entitlement.
+func (c *Client) DeleteEntitlement(ctx context.Context, lookupKey string) error {
+	if err := c.requireProject(); err != nil {
+		return err
+	}
+	return c.Do(ctx, "DELETE", c.projectPath("/entitlements/"+url.PathEscape(lookupKey)), nil, nil)
+}
+
+// ArchiveEntitlement toggles archive state.
+func (c *Client) ArchiveEntitlement(ctx context.Context, lookupKey string, archive bool) error {
+	if err := c.requireProject(); err != nil {
+		return err
+	}
+	action := "archive"
+	if !archive {
+		action = "unarchive"
+	}
+	path := c.projectPath("/entitlements/" + url.PathEscape(lookupKey) + "/actions/" + action)
+	return c.Do(ctx, "POST", path, struct{}{}, nil)
+}
+
+// ListEntitlementProducts lists products attached to an entitlement.
+func (c *Client) ListEntitlementProducts(ctx context.Context, lookupKey string) ([]Product, error) {
+	if err := c.requireProject(); err != nil {
+		return nil, err
+	}
+	return paginate[Product](ctx, c, c.projectPath("/entitlements/"+url.PathEscape(lookupKey)+"/products"))
+}
+
+// AttachProductsToEntitlement adds products that grant this entitlement.
+func (c *Client) AttachProductsToEntitlement(ctx context.Context, lookupKey string, productIDs []string) error {
+	if err := c.requireProject(); err != nil {
+		return err
+	}
+	body := map[string]any{"product_ids": productIDs}
+	path := c.projectPath("/entitlements/" + url.PathEscape(lookupKey) + "/actions/attach_products")
+	return c.Do(ctx, "POST", path, body, nil)
+}
+
+// DetachProductsFromEntitlement removes products from an entitlement.
+func (c *Client) DetachProductsFromEntitlement(ctx context.Context, lookupKey string, productIDs []string) error {
+	if err := c.requireProject(); err != nil {
+		return err
+	}
+	body := map[string]any{"product_ids": productIDs}
+	path := c.projectPath("/entitlements/" + url.PathEscape(lookupKey) + "/actions/detach_products")
+	return c.Do(ctx, "POST", path, body, nil)
+}

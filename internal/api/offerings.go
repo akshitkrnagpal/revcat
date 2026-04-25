@@ -107,3 +107,123 @@ func (c *Client) PutPaywall(ctx context.Context, offeringLookupKey string, body 
 	path := c.projectPath("/offerings/" + url.PathEscape(offeringLookupKey) + "/paywall")
 	return c.Do(ctx, "PUT", path, body, nil)
 }
+
+// CreateOffering creates a new offering. Body shape per v2 docs.
+func (c *Client) CreateOffering(ctx context.Context, body map[string]any) (*Offering, error) {
+	if err := c.requireProject(); err != nil {
+		return nil, err
+	}
+	var o Offering
+	if err := c.Do(ctx, "POST", c.projectPath("/offerings"), body, &o); err != nil {
+		return nil, err
+	}
+	return &o, nil
+}
+
+// UpdateOffering partial-updates an offering.
+func (c *Client) UpdateOffering(ctx context.Context, lookupKey string, body map[string]any) (*Offering, error) {
+	if err := c.requireProject(); err != nil {
+		return nil, err
+	}
+	var o Offering
+	path := c.projectPath("/offerings/" + url.PathEscape(lookupKey))
+	if err := c.Do(ctx, "POST", path, body, &o); err != nil {
+		return nil, err
+	}
+	return &o, nil
+}
+
+// DeleteOffering removes an offering.
+func (c *Client) DeleteOffering(ctx context.Context, lookupKey string) error {
+	if err := c.requireProject(); err != nil {
+		return err
+	}
+	return c.Do(ctx, "DELETE", c.projectPath("/offerings/"+url.PathEscape(lookupKey)), nil, nil)
+}
+
+// ArchiveOffering toggles archive state for an offering.
+func (c *Client) ArchiveOffering(ctx context.Context, lookupKey string, archive bool) error {
+	if err := c.requireProject(); err != nil {
+		return err
+	}
+	action := "archive"
+	if !archive {
+		action = "unarchive"
+	}
+	path := c.projectPath("/offerings/" + url.PathEscape(lookupKey) + "/actions/" + action)
+	return c.Do(ctx, "POST", path, struct{}{}, nil)
+}
+
+// GetPackage fetches a single package by id (not lookup_key - packages
+// are id-keyed in v2).
+func (c *Client) GetPackage(ctx context.Context, packageID string) (*Package, error) {
+	if err := c.requireProject(); err != nil {
+		return nil, err
+	}
+	var p Package
+	if err := c.Do(ctx, "GET", c.projectPath("/packages/"+url.PathEscape(packageID)), nil, &p); err != nil {
+		return nil, err
+	}
+	return &p, nil
+}
+
+// CreatePackage creates a package, typically attached to an offering.
+func (c *Client) CreatePackage(ctx context.Context, body map[string]any) (*Package, error) {
+	if err := c.requireProject(); err != nil {
+		return nil, err
+	}
+	var p Package
+	if err := c.Do(ctx, "POST", c.projectPath("/packages"), body, &p); err != nil {
+		return nil, err
+	}
+	return &p, nil
+}
+
+// UpdatePackage partial-updates a package.
+func (c *Client) UpdatePackage(ctx context.Context, packageID string, body map[string]any) (*Package, error) {
+	if err := c.requireProject(); err != nil {
+		return nil, err
+	}
+	var p Package
+	if err := c.Do(ctx, "POST", c.projectPath("/packages/"+url.PathEscape(packageID)), body, &p); err != nil {
+		return nil, err
+	}
+	return &p, nil
+}
+
+// DeletePackage removes a package.
+func (c *Client) DeletePackage(ctx context.Context, packageID string) error {
+	if err := c.requireProject(); err != nil {
+		return err
+	}
+	return c.Do(ctx, "DELETE", c.projectPath("/packages/"+url.PathEscape(packageID)), nil, nil)
+}
+
+// ListPackageProducts lists products attached to a package.
+func (c *Client) ListPackageProducts(ctx context.Context, packageID string) ([]Product, error) {
+	if err := c.requireProject(); err != nil {
+		return nil, err
+	}
+	return paginate[Product](ctx, c, c.projectPath("/packages/"+url.PathEscape(packageID)+"/products"))
+}
+
+// AttachProductsToPackage attaches one or more products to a package.
+// productIDs is the list of product ids; v2 wraps them in {product_ids: [...]}.
+func (c *Client) AttachProductsToPackage(ctx context.Context, packageID string, productIDs []string) error {
+	if err := c.requireProject(); err != nil {
+		return err
+	}
+	body := map[string]any{"product_ids": productIDs}
+	path := c.projectPath("/packages/" + url.PathEscape(packageID) + "/actions/attach_products")
+	return c.Do(ctx, "POST", path, body, nil)
+}
+
+// DetachProductsFromPackage removes products from a package.
+func (c *Client) DetachProductsFromPackage(ctx context.Context, packageID string, productIDs []string) error {
+	if err := c.requireProject(); err != nil {
+		return err
+	}
+	body := map[string]any{"product_ids": productIDs}
+	path := c.projectPath("/packages/" + url.PathEscape(packageID) + "/actions/detach_products")
+	return c.Do(ctx, "POST", path, body, nil)
+}
