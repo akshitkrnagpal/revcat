@@ -38,6 +38,14 @@ export default defineConfig({
           href: "https://github.com/akshitkrnagpal/revcat",
         },
       ],
+      head: [
+        { tag: "meta", attrs: { property: "og:image", content: "https://revcat.vercel.app/og.png" } },
+        { tag: "meta", attrs: { property: "og:image:width", content: "1200" } },
+        { tag: "meta", attrs: { property: "og:image:height", content: "630" } },
+        { tag: "meta", attrs: { property: "og:image:alt", content: "revcat - the RevenueCat CLI" } },
+        { tag: "meta", attrs: { name: "twitter:image", content: "https://revcat.vercel.app/og.png" } },
+        { tag: "meta", attrs: { name: "twitter:image:alt", content: "revcat - the RevenueCat CLI" } },
+      ],
       // Force dark by default; user can still toggle.
       customCss: ["./src/styles/custom.css"],
       sidebar: [

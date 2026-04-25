@@ -1,5 +1,10 @@
 # revcat
 
+[![Release](https://img.shields.io/github/v/release/akshitkrnagpal/revcat?label=release)](https://github.com/akshitkrnagpal/revcat/releases/latest)
+[![License](https://img.shields.io/github/license/akshitkrnagpal/revcat)](./LICENSE)
+[![Docs](https://img.shields.io/badge/docs-revcat.vercel.app-7c8aff)](https://revcat.vercel.app)
+[![Go](https://img.shields.io/github/go-mod/go-version/akshitkrnagpal/revcat)](./go.mod)
+
 The RevenueCat CLI. Run your RevenueCat project from the terminal instead of clicking through the dashboard.
 
 ```sh
@@ -11,7 +16,7 @@ revcat publish offering pro --paywall ./paywalls/pro.json
 
 ## Why
 
-RevenueCat ships a dashboard, REST API, and (2025) an MCP server, but no first-party CLI. revcat covers the full v2 REST API surface that a per-project secret key can reach: full CRUD on entitlements, offerings, packages, products, paywalls, webhooks, virtual currencies; per-customer grants/refunds/transfers; live event tail; metrics + charts.
+RevenueCat ships a dashboard, REST API, and (2025) an MCP server, but no first-party CLI. revcat covers the v2 REST API surface a per-project secret key can reach: full CRUD on entitlements, offerings, packages, products, paywalls, webhooks, virtual currencies; per-customer grants/refunds/transfers; metrics + charts; audit-logs.
 
 Output is a colored table when you're at a terminal and JSON when you're piping into a script - no `--json` ceremony.
 

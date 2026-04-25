@@ -8,11 +8,16 @@
     "start": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "astro": "astro"
+    "astro": "astro",
+    "gen:og": "node scripts/generate-og.mjs"
   },
   "dependencies": {
     "@astrojs/starlight": "^0.38.4",
     "astro": "^6.1.9",
     "sharp": "^0.33.5"
+  },
+  "devDependencies": {
+    "@resvg/resvg-js": "^2.6.2",
+    "satori": "^0.26.0"
   }
 }
