@@ -10,6 +10,7 @@ import (
 	entitlementscmd "github.com/akshitkrnagpal/revcat/commands/entitlements"
 	eventscmd "github.com/akshitkrnagpal/revcat/commands/events"
 	invoicescmd "github.com/akshitkrnagpal/revcat/commands/invoices"
+	metricscmd "github.com/akshitkrnagpal/revcat/commands/metrics"
 	offeringscmd "github.com/akshitkrnagpal/revcat/commands/offerings"
 	packagescmd "github.com/akshitkrnagpal/revcat/commands/packages"
 	productscmd "github.com/akshitkrnagpal/revcat/commands/products"
@@ -88,6 +89,8 @@ func init() {
 	rootCmd.AddCommand(entitlementscmd.Cmd)
 	rootCmd.AddCommand(eventscmd.Cmd)
 	rootCmd.AddCommand(invoicescmd.Cmd)
+	rootCmd.AddCommand(metricscmd.Cmd)
+	rootCmd.AddCommand(metricscmd.ChartsCmd)
 	rootCmd.AddCommand(offeringscmd.Cmd)
 	rootCmd.AddCommand(packagescmd.Cmd)
 	rootCmd.AddCommand(paywallscmd.Cmd)
