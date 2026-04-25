@@ -50,7 +50,7 @@ func runRevoke(cmd *cobra.Command, args []string) error {
 
 	ctx, cancel := context.WithTimeout(cmd.Context(), 30*time.Second)
 	defer cancel()
-	if err := client.RevokePromotionalEntitlement(ctx, customerID, entitlementID); err != nil {
+	if err := client.RevokeEntitlement(ctx, customerID, entitlementID); err != nil {
 		return err
 	}
 	output.Success("revoked")

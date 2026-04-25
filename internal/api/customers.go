@@ -212,45 +212,49 @@ func (c *Client) SnapshotCustomer(ctx context.Context, customerID string) (*Cust
 	return snap, nil
 }
 
-// GrantPromotionalEntitlement grants the entitlement to a customer for
-// the specified duration. Duration is a human-friendly string ("7d",
-// "1m", "1y", "lifetime"); we translate to RC's expected ISO-8601
-// duration plus the special "lifetime" sentinel.
-type GrantPromotionalRequest struct {
-	Duration  string `json:"duration"`
-	StartTime int64  `json:"start_time_ms,omitempty"`
-	Reason    string `json:"reason,omitempty"`
+// GrantEntitlementRequest is the body for the v2 grant action. Duration
+// accepts ISO-8601 ("P7D", "P1M", "P1Y") and the literal "lifetime".
+type GrantEntitlementRequest struct {
+	EntitlementID string `json:"entitlement_id"`
+	Duration      string `json:"duration"`
+	StartTime     int64  `json:"start_time_ms,omitempty"`
+	Reason        string `json:"reason,omitempty"`
 }
 
-func (c *Client) GrantPromotionalEntitlement(ctx context.Context, customerID, entitlementID string, req GrantPromotionalRequest) (*ActiveEntitlement, error) {
+// GrantEntitlement grants a promotional entitlement to a customer.
+// Wraps POST /customers/{id}/actions/grant_entitlement.
+func (c *Client) GrantEntitlement(ctx context.Context, customerID string, req GrantEntitlementRequest) (*ActiveEntitlement, error) {
 	if err := c.requireProject(); err != nil {
 		return nil, err
 	}
 	var out ActiveEntitlement
-	path := c.projectPath("/customers/" + url.PathEscape(customerID) + "/active_entitlements/" + url.PathEscape(entitlementID) + "/grant_promotional")
+	path := c.projectPath("/customers/" + url.PathEscape(customerID) + "/actions/grant_entitlement")
 	if err := c.Do(ctx, "POST", path, req, &out); err != nil {
 		return nil, err
 	}
 	return &out, nil
 }
 
-// RevokePromotionalEntitlement removes a promotional entitlement.
-func (c *Client) RevokePromotionalEntitlement(ctx context.Context, customerID, entitlementID string) error {
+// RevokeEntitlement removes a promotional entitlement.
+// Wraps POST /customers/{id}/actions/revoke_entitlement.
+func (c *Client) RevokeEntitlement(ctx context.Context, customerID, entitlementID string) error {
 	if err := c.requireProject(); err != nil {
 		return err
 	}
-	path := c.projectPath("/customers/" + url.PathEscape(customerID) + "/active_entitlements/" + url.PathEscape(entitlementID) + "/revoke_promotional")
-	return c.Do(ctx, "POST", path, struct{}{}, nil)
+	path := c.projectPath("/customers/" + url.PathEscape(customerID) + "/actions/revoke_entitlement")
+	return c.Do(ctx, "POST", path, map[string]string{"entitlement_id": entitlementID}, nil)
 }
 
-// RefundTransaction issues a refund through the appropriate store. RC's
-// API returns the updated transaction status; we surface it raw.
-func (c *Client) RefundTransaction(ctx context.Context, customerID, transactionID string) (map[string]any, error) {
+// RefundTransaction issues a refund through the appropriate store.
+// Wraps POST /subscriptions/{sid}/transactions/{tid}/actions/refund.
+// The subscription id is required because v2 scopes refunds under the
+// subscription, not the customer.
+func (c *Client) RefundTransaction(ctx context.Context, subscriptionID, transactionID string) (map[string]any, error) {
 	if err := c.requireProject(); err != nil {
 		return nil, err
 	}
 	var out map[string]any
-	path := c.projectPath("/customers/" + url.PathEscape(customerID) + "/transactions/" + url.PathEscape(transactionID) + ":refund")
+	path := c.projectPath("/subscriptions/" + url.PathEscape(subscriptionID) + "/transactions/" + url.PathEscape(transactionID) + "/actions/refund")
 	if err := c.Do(ctx, "POST", path, struct{}{}, &out); err != nil {
 		return nil, err
 	}

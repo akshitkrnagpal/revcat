@@ -74,9 +74,10 @@ func runGrant(cmd *cobra.Command, args []string) error {
 
 	ctx, cancel := context.WithTimeout(cmd.Context(), 30*time.Second)
 	defer cancel()
-	ent, err := client.GrantPromotionalEntitlement(ctx, customerID, entitlementID, api.GrantPromotionalRequest{
-		Duration: rcDuration,
-		Reason:   grantReason,
+	ent, err := client.GrantEntitlement(ctx, customerID, api.GrantEntitlementRequest{
+		EntitlementID: entitlementID,
+		Duration:      rcDuration,
+		Reason:        grantReason,
 	})
 	if err != nil {
 		return err

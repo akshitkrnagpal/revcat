@@ -66,16 +66,16 @@ func (c *Client) ListPackages(ctx context.Context, offeringLookupKey string) ([]
 }
 
 // SetCurrentOffering promotes the named offering to current. The v2
-// spelling has bounced between trailing "_set_current" suffixes and a
-// dedicated /current endpoint; we use the suffix path which is what the
-// dashboard surfaces.
+// docs model this as an offering update with `is_current: true`, not a
+// dedicated action. Wraps POST /offerings/{id}.
 func (c *Client) SetCurrentOffering(ctx context.Context, lookupKey string) (*Offering, error) {
 	if err := c.requireProject(); err != nil {
 		return nil, err
 	}
 	var out Offering
-	path := c.projectPath("/offerings/" + url.PathEscape(lookupKey) + "/_set_current")
-	if err := c.Do(ctx, "POST", path, struct{}{}, &out); err != nil {
+	path := c.projectPath("/offerings/" + url.PathEscape(lookupKey))
+	body := map[string]any{"is_current": true}
+	if err := c.Do(ctx, "POST", path, body, &out); err != nil {
 		return nil, err
 	}
 	return &out, nil
