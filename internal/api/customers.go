@@ -261,6 +261,97 @@ func (c *Client) RefundTransaction(ctx context.Context, subscriptionID, transact
 	return out, nil
 }
 
+// ListCustomers pages through customers in the active project. Useful for
+// admin/audit; for support workflows search by store id is usually faster.
+func (c *Client) ListCustomers(ctx context.Context) ([]Customer, error) {
+	if err := c.requireProject(); err != nil {
+		return nil, err
+	}
+	return paginate[Customer](ctx, c, c.projectPath("/customers"))
+}
+
+// CreateCustomer pre-creates a customer record with optional attributes.
+// Most apps let the SDK create customers on first launch; this is for
+// migration/imports.
+func (c *Client) CreateCustomer(ctx context.Context, body map[string]any) (*Customer, error) {
+	if err := c.requireProject(); err != nil {
+		return nil, err
+	}
+	var out Customer
+	if err := c.Do(ctx, "POST", c.projectPath("/customers"), body, &out); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+// DeleteCustomer permanently removes a customer (GDPR/test cleanup).
+func (c *Client) DeleteCustomer(ctx context.Context, customerID string) error {
+	if err := c.requireProject(); err != nil {
+		return err
+	}
+	return c.Do(ctx, "DELETE", c.projectPath("/customers/"+url.PathEscape(customerID)), nil, nil)
+}
+
+// TransferCustomer moves entitlements/subscriptions from src to dst.
+func (c *Client) TransferCustomer(ctx context.Context, srcID, dstID string) error {
+	if err := c.requireProject(); err != nil {
+		return err
+	}
+	body := map[string]any{"target_customer_id": dstID}
+	path := c.projectPath("/customers/" + url.PathEscape(srcID) + "/actions/transfer")
+	return c.Do(ctx, "POST", path, body, nil)
+}
+
+// OverrideOffering forces a specific offering on a customer (typically for
+// QA / cohort tests). Pass empty offeringID to clear the override.
+func (c *Client) OverrideOffering(ctx context.Context, customerID, offeringID string) error {
+	if err := c.requireProject(); err != nil {
+		return err
+	}
+	body := map[string]any{"offering_id": offeringID}
+	path := c.projectPath("/customers/" + url.PathEscape(customerID) + "/actions/override_offering")
+	return c.Do(ctx, "POST", path, body, nil)
+}
+
+// RestoreGooglePlayPurchase forces a Play Store entitlement re-check.
+func (c *Client) RestoreGooglePlayPurchase(ctx context.Context, customerID string) error {
+	if err := c.requireProject(); err != nil {
+		return err
+	}
+	path := c.projectPath("/customers/" + url.PathEscape(customerID) + "/actions/restore_google_play_purchase")
+	return c.Do(ctx, "POST", path, struct{}{}, nil)
+}
+
+// GetAttributes returns subscriber attributes (free-form key/value).
+func (c *Client) GetAttributes(ctx context.Context, customerID string) (map[string]any, error) {
+	if err := c.requireProject(); err != nil {
+		return nil, err
+	}
+	var out map[string]any
+	path := c.projectPath("/customers/" + url.PathEscape(customerID) + "/attributes")
+	if err := c.Do(ctx, "GET", path, nil, &out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// SetAttributes upserts subscriber attributes.
+func (c *Client) SetAttributes(ctx context.Context, customerID string, attrs map[string]any) error {
+	if err := c.requireProject(); err != nil {
+		return err
+	}
+	path := c.projectPath("/customers/" + url.PathEscape(customerID) + "/attributes")
+	return c.Do(ctx, "POST", path, attrs, nil)
+}
+
+// ListInvoices pages a customer's invoices.
+func (c *Client) ListInvoices(ctx context.Context, customerID string) ([]map[string]any, error) {
+	if err := c.requireProject(); err != nil {
+		return nil, err
+	}
+	return paginate[map[string]any](ctx, c, c.projectPath("/customers/"+url.PathEscape(customerID)+"/invoices"))
+}
+
 // paginate is a generic helper for v2's cursor-paginated list endpoints.
 func paginate[T any](ctx context.Context, c *Client, basePath string) ([]T, error) {
 	var all []T
