@@ -62,9 +62,8 @@ revcat products           list | view | create | update | delete | archive | una
 revcat paywalls           list | view | create | delete
 
 revcat subscribers        info | list | create | delete
-                          grant | revoke | transfer | override-offering
-                          attributes | invoices | restore-google-play
-                          vc-balance | vc-tx | vc-set-balance
+                          grant | revoke | transfer
+                          attributes | invoices
                           refund (delegates to subscriptions)
 revcat subscriptions      view | transactions | entitlements
                           cancel | refund | management-url | search

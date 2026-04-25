@@ -68,15 +68,31 @@ var viewCmd = &cobra.Command{
 	},
 }
 
-var createFile string
+var (
+	createFile     string
+	createOffering string
+)
 
 var createCmd = &cobra.Command{
 	Use:   "create",
-	Short: "Create a paywall from a JSON body",
+	Short: "Create a paywall record scoped to an offering",
+	Long: `Create a paywall record. v2 only takes {offering_id} - the paywall
+content (template, copy, components) is set later via
+` + "`revcat publish offering <id> --paywall <file>`" + `.
+
+You usually want publish offering instead of this command.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		body, err := cliutil.LoadJSON(createFile)
-		if err != nil {
-			return err
+		var body map[string]any
+		if createFile != "" {
+			b, err := cliutil.LoadJSON(createFile)
+			if err != nil {
+				return err
+			}
+			body = b
+		} else if createOffering != "" {
+			body = map[string]any{"offering_id": createOffering}
+		} else {
+			return errors.New("pass --file or --offering")
 		}
 		client, _, err := cliutil.Client(cmd)
 		if err != nil {
@@ -97,8 +113,8 @@ var createCmd = &cobra.Command{
 }
 
 func init() {
-	createCmd.Flags().StringVarP(&createFile, "file", "f", "", "JSON body (required)")
-	_ = createCmd.MarkFlagRequired("file")
+	createCmd.Flags().StringVarP(&createFile, "file", "f", "", "JSON body")
+	createCmd.Flags().StringVar(&createOffering, "offering", "", "Offering id (required if --file not used)")
 }
 
 var deleteConfirm bool

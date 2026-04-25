@@ -55,14 +55,18 @@ func (c *Client) DeletePaywall(ctx context.Context, paywallID string) error {
 	return c.Do(ctx, "DELETE", c.projectPath("/paywalls/"+url.PathEscape(paywallID)), nil, nil)
 }
 
-// Webhook is a project integration that receives event POSTs.
+// Webhook is a project integration that receives event POSTs. v2 names
+// the field event_types and uses lowercase event values like
+// "initial_purchase" (not "INITIAL_PURCHASE" - that's the webhook payload
+// shape, not the API config).
 type Webhook struct {
-	ID          string   `json:"id"`
-	URL         string   `json:"url"`
-	Description string   `json:"description,omitempty"`
-	Events      []string `json:"events,omitempty"`
-	Disabled    bool     `json:"disabled,omitempty"`
-	CreatedAt   int64    `json:"created_at"`
+	ID         string   `json:"id"`
+	Name       string   `json:"name"`
+	URL        string   `json:"url"`
+	EventTypes []string `json:"event_types,omitempty"`
+	AppID      string   `json:"app_id,omitempty"`
+	Environment string  `json:"environment,omitempty"`
+	CreatedAt  int64    `json:"created_at"`
 }
 
 // ListWebhooks pages through every webhook integration.
@@ -119,11 +123,13 @@ func (c *Client) DeleteWebhook(ctx context.Context, id string) error {
 }
 
 // VirtualCurrency is a project-level credit/coin balance type.
+// Note: v2 keys VCs by their uppercase `code` (e.g., "COIN") - there is
+// no separate id or lookup_key field.
 type VirtualCurrency struct {
-	ID          string `json:"id"`
-	LookupKey   string `json:"lookup_key"`
-	DisplayName string `json:"display_name"`
-	Code        string `json:"code,omitempty"`
+	Name        string `json:"name"`
+	Code        string `json:"code"`
+	Description string `json:"description,omitempty"`
+	State       string `json:"state,omitempty"`
 	CreatedAt   int64  `json:"created_at"`
 }
 
@@ -193,36 +199,6 @@ func (c *Client) ArchiveVirtualCurrency(ctx context.Context, idOrKey string, arc
 	return c.Do(ctx, "POST", path, struct{}{}, nil)
 }
 
-// ListCustomerVCBalances lists a customer's VC balances.
-func (c *Client) ListCustomerVCBalances(ctx context.Context, customerID string) ([]map[string]any, error) {
-	if err := c.requireProject(); err != nil {
-		return nil, err
-	}
-	return paginate[map[string]any](ctx, c, c.projectPath("/customers/"+url.PathEscape(customerID)+"/virtual_currencies_balances"))
-}
-
-// CreateCustomerVCTransaction posts a VC transaction (credit or debit).
-func (c *Client) CreateCustomerVCTransaction(ctx context.Context, customerID string, body map[string]any) (map[string]any, error) {
-	if err := c.requireProject(); err != nil {
-		return nil, err
-	}
-	var out map[string]any
-	path := c.projectPath("/customers/" + url.PathEscape(customerID) + "/virtual_currencies/transactions")
-	if err := c.Do(ctx, "POST", path, body, &out); err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-// UpdateCustomerVCBalance directly sets a balance.
-func (c *Client) UpdateCustomerVCBalance(ctx context.Context, customerID string, body map[string]any) (map[string]any, error) {
-	if err := c.requireProject(); err != nil {
-		return nil, err
-	}
-	var out map[string]any
-	path := c.projectPath("/customers/" + url.PathEscape(customerID) + "/virtual_currencies_balances")
-	if err := c.Do(ctx, "POST", path, body, &out); err != nil {
-		return nil, err
-	}
-	return out, nil
-}
+// Note: per-customer VC endpoints (balances, transactions, set-balance)
+// don't exist on the v2 customer surface. Smoke-tested 2026-04-25 - all
+// paths 404. Removed from the CLI to avoid shipping broken commands.

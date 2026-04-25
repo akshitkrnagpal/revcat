@@ -3,7 +3,9 @@ title: paywalls
 description: Manage top-level paywall resources.
 ---
 
-Manage paywall records in the project's paywall library. To deploy a paywall config to an offering use [`revcat publish offering --paywall <file>`](/commands/publish/).
+Manage paywall records in the project's paywall library. v2 ties every paywall to exactly one offering, and the create endpoint accepts only `{offering_id}` - the actual paywall content (template, copy, components) is set later via the offering-scoped paywall config.
+
+For most workflows you want [`revcat publish offering --paywall <file>`](/commands/publish/), which composes the paywall PUT and offering activation in one shot.
 
 ## Subcommands
 
@@ -11,13 +13,22 @@ Manage paywall records in the project's paywall library. To deploy a paywall con
 | --- | --- |
 | `paywalls list` | List paywalls in the project |
 | `paywalls view <id>` | Show one paywall (raw JSON) |
-| `paywalls create` | Create a paywall from a JSON body (`--file`) |
+| `paywalls create` | Create a paywall record (`--offering <id>` or `--file`) |
 | `paywalls delete <id>` | Delete a paywall |
 
-## Example
+## Examples
 
 ```sh
 revcat paywalls list
 revcat paywalls view pw_xxx | jq .
-revcat paywalls create --file ./paywalls/pro.json
+revcat paywalls create --offering ofr_xxx
+revcat paywalls delete pw_xxx -y
 ```
+
+## Body shape (create via `--file`)
+
+```json
+{ "offering_id": "ofr_xxx" }
+```
+
+That's it - other fields are rejected by v2. To populate the paywall, use `revcat publish offering <offering_id> --paywall ./paywall.json`.

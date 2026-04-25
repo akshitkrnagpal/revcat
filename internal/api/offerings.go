@@ -17,15 +17,16 @@ type Offering struct {
 	Packages    []Package `json:"packages,omitempty"`
 }
 
-// Package is a single purchasable inside an offering. Identifier follows
+// Package is a single purchasable inside an offering. lookup_key follows
 // RC's $rc_monthly / $rc_annual / custom convention.
 type Package struct {
-	ID         string `json:"id"`
-	Identifier string `json:"identifier"`
-	Position   int    `json:"position"`
-	ProductID  string `json:"product_id,omitempty"`
-	OfferingID string `json:"offering_id,omitempty"`
-	CreatedAt  int64  `json:"created_at"`
+	ID          string `json:"id"`
+	LookupKey   string `json:"lookup_key"`
+	DisplayName string `json:"display_name,omitempty"`
+	Position    int    `json:"position"`
+	ProductID   string `json:"product_id,omitempty"`
+	OfferingID  string `json:"offering_id,omitempty"`
+	CreatedAt   int64  `json:"created_at"`
 }
 
 // ListOfferings pages through every offering in the active project.
@@ -220,13 +221,22 @@ func (c *Client) GetPackage(ctx context.Context, packageID string) (*Package, er
 	return &p, nil
 }
 
-// CreatePackage creates a package, typically attached to an offering.
-func (c *Client) CreatePackage(ctx context.Context, body map[string]any) (*Package, error) {
+// CreatePackage creates a package under an offering. The v2 endpoint is
+// scoped under the offering: POST /offerings/{oid}/packages. The body
+// must include lookup_key + display_name; offering_id from the body is
+// ignored, the path drives the scope.
+func (c *Client) CreatePackage(ctx context.Context, offeringIDOrKey string, body map[string]any) (*Package, error) {
 	if err := c.requireProject(); err != nil {
 		return nil, err
 	}
+	id, err := c.ResolveOfferingID(ctx, offeringIDOrKey)
+	if err != nil {
+		return nil, err
+	}
+	delete(body, "offering_id") // path scopes the offering; v2 rejects the duplicate
 	var p Package
-	if err := c.Do(ctx, "POST", c.projectPath("/packages"), body, &p); err != nil {
+	path := c.projectPath("/offerings/" + url.PathEscape(id) + "/packages")
+	if err := c.Do(ctx, "POST", path, body, &p); err != nil {
 		return nil, err
 	}
 	return &p, nil
@@ -260,13 +270,23 @@ func (c *Client) ListPackageProducts(ctx context.Context, packageID string) ([]P
 	return paginate[Product](ctx, c, c.projectPath("/packages/"+url.PathEscape(packageID)+"/products"))
 }
 
-// AttachProductsToPackage attaches one or more products to a package.
-// productIDs is the list of product ids; v2 wraps them in {product_ids: [...]}.
-func (c *Client) AttachProductsToPackage(ctx context.Context, packageID string, productIDs []string) error {
+// PackageProductAttachment is one entry in the AttachProductsToPackage
+// body. eligibility_criteria controls when the product is offered to a
+// customer (v2 currently accepts: "all", "google_sdk_lt_6", "google_sdk_ge_6").
+type PackageProductAttachment struct {
+	ProductID           string `json:"product_id"`
+	EligibilityCriteria string `json:"eligibility_criteria"`
+}
+
+// AttachProductsToPackage attaches one or more products to a package
+// with per-product eligibility criteria. v2 wraps them in
+// {products:[{product_id, eligibility_criteria}, ...]} - distinct from
+// the entitlement attach which uses {product_ids:[...]}.
+func (c *Client) AttachProductsToPackage(ctx context.Context, packageID string, attachments []PackageProductAttachment) error {
 	if err := c.requireProject(); err != nil {
 		return err
 	}
-	body := map[string]any{"product_ids": productIDs}
+	body := map[string]any{"products": attachments}
 	path := c.projectPath("/packages/" + url.PathEscape(packageID) + "/actions/attach_products")
 	return c.Do(ctx, "POST", path, body, nil)
 }

@@ -3,11 +3,13 @@ package subscribers
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/spf13/cobra"
 
+	"github.com/akshitkrnagpal/revcat/internal/api"
 	"github.com/akshitkrnagpal/revcat/internal/cliutil"
 	"github.com/akshitkrnagpal/revcat/internal/output"
 )
@@ -133,65 +135,10 @@ func init() {
 	Cmd.AddCommand(transferCmd)
 }
 
-var overrideClear bool
-
-var overrideCmd = &cobra.Command{
-	Use:   "override-offering <user_id> [offering_id]",
-	Short: "Force a specific offering on a customer (or --clear to reset)",
-	Args:  cobra.RangeArgs(1, 2),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		offeringID := ""
-		if len(args) == 2 {
-			offeringID = args[1]
-		}
-		if !overrideClear && offeringID == "" {
-			return errors.New("pass an offering_id or --clear")
-		}
-		client, _, err := cliutil.Client(cmd)
-		if err != nil {
-			return err
-		}
-		ctx, cancel := context.WithTimeout(cmd.Context(), 30*time.Second)
-		defer cancel()
-		if err := client.OverrideOffering(ctx, args[0], offeringID); err != nil {
-			return err
-		}
-		if overrideClear {
-			output.Success("cleared offering override for %s", args[0])
-		} else {
-			output.Success("override set: %s -> offering %s", args[0], offeringID)
-		}
-		return nil
-	},
-}
-
-func init() {
-	overrideCmd.Flags().BoolVar(&overrideClear, "clear", false, "Clear an existing override")
-	Cmd.AddCommand(overrideCmd)
-}
-
-var restoreGoogleCmd = &cobra.Command{
-	Use:   "restore-google-play <user_id>",
-	Short: "Force a Play Store entitlement re-check for a customer",
-	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		client, _, err := cliutil.Client(cmd)
-		if err != nil {
-			return err
-		}
-		ctx, cancel := context.WithTimeout(cmd.Context(), 30*time.Second)
-		defer cancel()
-		if err := client.RestoreGooglePlayPurchase(ctx, args[0]); err != nil {
-			return err
-		}
-		output.Success("restore initiated for %s", args[0])
-		return nil
-	},
-}
-
-func init() {
-	Cmd.AddCommand(restoreGoogleCmd)
-}
+// Note: revcat used to expose `subscribers override-offering` and
+// `subscribers restore-google-play`. Both endpoints 404 against v2 in
+// our smoke test - they were v1 / dashboard-only actions and never
+// got a v2 customer-scoped equivalent. Removed from the CLI.
 
 var (
 	attrsSetFile string
@@ -202,7 +149,11 @@ var attrsCmd = &cobra.Command{
 	Use:   "attributes <user_id>",
 	Short: "Get or set subscriber attributes",
 	Long: `With no flags, lists current attributes. With --set key=value (repeatable)
-or --file <path.json>, upserts the listed attributes.`,
+or --file <path.json>, upserts the listed attributes.
+
+The v2 attributes endpoint takes an array of {name, value} objects.
+Both the file and --set forms are normalized to that shape before
+sending.`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		client, _, err := cliutil.Client(cmd)
@@ -212,14 +163,14 @@ or --file <path.json>, upserts the listed attributes.`,
 		ctx, cancel := context.WithTimeout(cmd.Context(), 30*time.Second)
 		defer cancel()
 		if attrsSetFile != "" || len(attrsSetKV) > 0 {
-			body := map[string]any{}
+			merged := map[string]string{}
 			if attrsSetFile != "" {
 				b, err := cliutil.LoadJSON(attrsSetFile)
 				if err != nil {
 					return err
 				}
 				for k, v := range b {
-					body[k] = v
+					merged[k] = fmt.Sprint(v)
 				}
 			}
 			for _, kv := range attrsSetKV {
@@ -227,12 +178,16 @@ or --file <path.json>, upserts the listed attributes.`,
 				if k == "" {
 					return errors.New("bad --set value: " + kv + " (expected key=value)")
 				}
-				body[k] = v
+				merged[k] = v
 			}
-			if err := client.SetAttributes(ctx, args[0], body); err != nil {
+			attrs := make([]api.CustomerAttribute, 0, len(merged))
+			for k, v := range merged {
+				attrs = append(attrs, api.CustomerAttribute{Name: k, Value: v})
+			}
+			if err := client.SetAttributes(ctx, args[0], attrs); err != nil {
 				return err
 			}
-			output.Success("set %d attribute(s) on %s", len(body), args[0])
+			output.Success("set %d attribute(s) on %s", len(attrs), args[0])
 			return nil
 		}
 		out, err := client.GetAttributes(ctx, args[0])
@@ -243,8 +198,8 @@ or --file <path.json>, upserts the listed attributes.`,
 			return output.JSON(out)
 		}
 		rows := make([][]any, 0, len(out))
-		for k, v := range out {
-			rows = append(rows, []any{k, v})
+		for _, a := range out {
+			rows = append(rows, []any{a.Name, a.Value})
 		}
 		return output.Table([]string{"key", "value"}, rows)
 	},

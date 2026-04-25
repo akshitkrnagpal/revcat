@@ -33,13 +33,19 @@ func (c *Client) ListProjects(ctx context.Context) ([]Project, error) {
 	}
 }
 
-// GetProject fetches a single project by id.
+// GetProject fetches a single project by id. v2 has no GET /projects/{id}
+// endpoint, so we list and filter client-side.
 func (c *Client) GetProject(ctx context.Context, id string) (*Project, error) {
-	var p Project
-	if err := c.Do(ctx, "GET", "/projects/"+id, nil, &p); err != nil {
+	all, err := c.ListProjects(ctx)
+	if err != nil {
 		return nil, err
 	}
-	return &p, nil
+	for i := range all {
+		if all[i].ID == id {
+			return &all[i], nil
+		}
+	}
+	return nil, &APIError{Status: 404, StatusText: "Not Found", Message: "no project with id " + id + " accessible to this key"}
 }
 
 // App is a per-platform app inside a project (one per bundle id / package).

@@ -92,23 +92,21 @@ revcat subscribers list                          # paged
 revcat subscribers create <user_id> [--file ./body.json]
 revcat subscribers delete <user_id> [-y]
 revcat subscribers transfer <src> <dst> [-y]
-revcat subscribers grant <user> <ent> -d <dur> [-r "reason"] [-y]
+revcat subscribers grant <user> <ent> -d <dur> [-y]
 revcat subscribers revoke <user> <ent> [-y]
 revcat subscribers refund <subscription_id> <transaction_id> [-y]
-revcat subscribers override-offering <user> [<offering>] | --clear
-revcat subscribers restore-google-play <user>
 
 revcat subscribers attributes <user>             # get
 revcat subscribers attributes <user> --set k=v --set k2=v2 [--file ./attrs.json]
 
 revcat subscribers invoices <user>
-revcat subscribers vc-balance <user>
-revcat subscribers vc-tx <user> --currency <vc_id> --amount <n> [--reason "..."]
-revcat subscribers vc-tx <user> --file ./tx.json
-revcat subscribers vc-set-balance <user> --file ./balance.json
 ```
 
-`grant -d / --duration` accepts: `forever` / `lifetime`, `7d` / `30d` / `90d`, `1m` / `1y`, RC built-ins (`daily`, `weekly`, `monthly`, `yearly`).
+`grant -d / --duration` accepts: `forever` / `lifetime` (~100 years), `7d` / `30d` / `90d`, `1m` / `3m` / `6m` (calendar months), `1y` / `2y`. revcat translates to an absolute `expires_at` (Unix ms) before sending.
+
+`subscribers revoke` is implemented as "grant with a near-future expires_at" because v2 has no first-class revoke endpoint. The entitlement appears expired on the next read.
+
+`subscribers attributes --set k=v` is normalized to v2's `[{name, value}]` shape automatically.
 
 ## Subscriptions, purchases, invoices
 
@@ -158,18 +156,25 @@ Composes set-current + paywall PUT behind one plan. Existing paywall is fetched 
 ```sh
 revcat webhooks list
 revcat webhooks view <id>
-revcat webhooks create --url https://... --events INITIAL_PURCHASE,CANCELLATION [--description "..."]
+revcat webhooks create --name "..." --url https://... --events initial_purchase,renewal,cancellation
 revcat webhooks create --file ./webhook.json
-revcat webhooks update <id> --url ... | --events ... | --disabled true|false | --file ./patch.json
+revcat webhooks update <id> --url ... | --events ... | --name ... | --file ./patch.json
 revcat webhooks delete <id> [-y]
 
+# webhooks notes:
+# - event_types are LOWERCASE (initial_purchase, not INITIAL_PURCHASE).
+#   --events accepts either form; revcat lowercases.
+# - URL must pass RC's reachability check; example.com / localhost fail.
+# - body shape on --file: {name, url, event_types:[...]}
+
 revcat virtual-currencies list
-revcat virtual-currencies view <id>
-revcat virtual-currencies create --file ./vc.json    # body: lookup_key, display_name, code
-revcat virtual-currencies update <id> --file ./patch.json
-revcat virtual-currencies delete <id> [-y]
-revcat virtual-currencies archive <id>
-revcat virtual-currencies unarchive <id>
+revcat virtual-currencies view <CODE>                  # uppercase, e.g. COIN
+revcat virtual-currencies create --name Coins --code COIN [--description "..."]
+revcat virtual-currencies create --file ./vc.json      # body: {name, code, description?}
+revcat virtual-currencies update <CODE> --name "..." [--description "..."] | --file ./patch.json
+revcat virtual-currencies delete <CODE> [-y]
+revcat virtual-currencies archive <CODE>
+revcat virtual-currencies unarchive <CODE>
 ```
 
 ## Output controls (every command)

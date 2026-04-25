@@ -18,8 +18,13 @@ var Cmd = &cobra.Command{
 	Use:   "webhooks",
 	Short: "Manage webhook integrations",
 	Long: `Webhooks are project integrations that receive event POSTs (purchases,
-renewals, cancellations, refunds, ...). Each webhook has a target URL,
-a list of events it subscribes to, and a disabled flag.`,
+renewals, cancellations, refunds, ...). Each webhook has a name, target
+URL, and a list of event_types it subscribes to.
+
+Event values are LOWERCASE in the API config (initial_purchase,
+renewal, cancellation, ...) - even though the webhook payload itself
+uses screaming case (INITIAL_PURCHASE). revcat lowercases values
+passed via --events for you.`,
 }
 
 func init() {
@@ -42,13 +47,9 @@ var listCmd = &cobra.Command{
 		}
 		rows := make([][]any, 0, len(hooks))
 		for _, h := range hooks {
-			marker := ""
-			if h.Disabled {
-				marker = "off"
-			}
-			rows = append(rows, []any{marker, h.ID, h.URL, len(h.Events), cliutil.FormatTime(h.CreatedAt)})
+			rows = append(rows, []any{h.ID, h.Name, h.URL, len(h.EventTypes), cliutil.FormatTime(h.CreatedAt)})
 		}
-		return output.Table([]string{"", "id", "url", "events", "created"}, rows)
+		return output.Table([]string{"id", "name", "url", "events", "created"}, rows)
 	},
 }
 
@@ -72,10 +73,11 @@ var viewCmd = &cobra.Command{
 		}
 		rows := [][]any{
 			{"id", h.ID},
+			{"name", h.Name},
 			{"url", h.URL},
-			{"description", cliutil.Dash(h.Description)},
-			{"disabled", h.Disabled},
-			{"events", strings.Join(h.Events, ", ")},
+			{"event_types", strings.Join(h.EventTypes, ", ")},
+			{"app_id", cliutil.Dash(h.AppID)},
+			{"environment", cliutil.Dash(h.Environment)},
 			{"created", cliutil.FormatTime(h.CreatedAt)},
 		}
 		return output.Table([]string{"field", "value"}, rows)
@@ -84,14 +86,17 @@ var viewCmd = &cobra.Command{
 
 var (
 	createFile   string
+	createName   string
 	createURL    string
 	createEvents []string
-	createDesc   string
 )
 
 var createCmd = &cobra.Command{
 	Use:   "create",
 	Short: "Create a webhook integration",
+	Long: `Create a webhook. Required: name, url, event_types. URL must be a
+valid HTTPS endpoint that RC can validate as reachable - localhost and
+example.com don't pass.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		var body map[string]any
 		if createFile != "" {
@@ -100,16 +105,15 @@ var createCmd = &cobra.Command{
 				return err
 			}
 			body = b
-		} else if createURL != "" {
-			body = map[string]any{"url": createURL}
-			if len(createEvents) > 0 {
-				body["events"] = createEvents
-			}
-			if createDesc != "" {
-				body["description"] = createDesc
+			normalizeEventTypes(body)
+		} else if createURL != "" && createName != "" {
+			body = map[string]any{
+				"name":        createName,
+				"url":         createURL,
+				"event_types": lowerSlice(createEvents),
 			}
 		} else {
-			return errors.New("pass --file or --url")
+			return errors.New("pass --file or --name + --url + --events")
 		}
 		client, _, err := cliutil.Client(cmd)
 		if err != nil {
@@ -131,16 +135,16 @@ var createCmd = &cobra.Command{
 
 func init() {
 	createCmd.Flags().StringVarP(&createFile, "file", "f", "", "JSON body")
-	createCmd.Flags().StringVar(&createURL, "url", "", "Target URL")
-	createCmd.Flags().StringSliceVar(&createEvents, "events", nil, "Events to subscribe to (comma-separated)")
-	createCmd.Flags().StringVar(&createDesc, "description", "", "Optional description")
+	createCmd.Flags().StringVar(&createName, "name", "", "Webhook name (required)")
+	createCmd.Flags().StringVar(&createURL, "url", "", "Target URL (required)")
+	createCmd.Flags().StringSliceVar(&createEvents, "events", nil, "Event types (comma-separated). Values are lowercased before send.")
 }
 
 var (
-	updateFile     string
-	updateURL      string
-	updateEvents   []string
-	updateDisabled string
+	updateFile   string
+	updateName   string
+	updateURL    string
+	updateEvents []string
 )
 
 var updateCmd = &cobra.Command{
@@ -157,21 +161,19 @@ var updateCmd = &cobra.Command{
 			for k, v := range b {
 				body[k] = v
 			}
+			normalizeEventTypes(body)
+		}
+		if updateName != "" {
+			body["name"] = updateName
 		}
 		if updateURL != "" {
 			body["url"] = updateURL
 		}
 		if len(updateEvents) > 0 {
-			body["events"] = updateEvents
-		}
-		switch updateDisabled {
-		case "true":
-			body["disabled"] = true
-		case "false":
-			body["disabled"] = false
+			body["event_types"] = lowerSlice(updateEvents)
 		}
 		if len(body) == 0 {
-			return errors.New("pass --file or one of --url / --events / --disabled")
+			return errors.New("pass --file or one of --name / --url / --events")
 		}
 		client, _, err := cliutil.Client(cmd)
 		if err != nil {
@@ -193,9 +195,9 @@ var updateCmd = &cobra.Command{
 
 func init() {
 	updateCmd.Flags().StringVarP(&updateFile, "file", "f", "", "Patch body as JSON")
+	updateCmd.Flags().StringVar(&updateName, "name", "", "New name")
 	updateCmd.Flags().StringVar(&updateURL, "url", "", "New target URL")
-	updateCmd.Flags().StringSliceVar(&updateEvents, "events", nil, "New events list")
-	updateCmd.Flags().StringVar(&updateDisabled, "disabled", "", "Set 'true' or 'false'")
+	updateCmd.Flags().StringSliceVar(&updateEvents, "events", nil, "New event_types list")
 }
 
 var deleteConfirm bool
@@ -230,4 +232,31 @@ var deleteCmd = &cobra.Command{
 
 func init() {
 	deleteCmd.Flags().BoolVarP(&deleteConfirm, "confirm", "y", false, "Skip the prompt")
+}
+
+// lowerSlice returns a new slice with each element lowercased.
+func lowerSlice(in []string) []string {
+	out := make([]string, len(in))
+	for i, s := range in {
+		out[i] = strings.ToLower(s)
+	}
+	return out
+}
+
+// normalizeEventTypes lowercases any event_types entries inside a body.
+// v2 rejects screaming-case event names like INITIAL_PURCHASE.
+func normalizeEventTypes(body map[string]any) {
+	raw, ok := body["event_types"].([]any)
+	if !ok {
+		return
+	}
+	out := make([]any, len(raw))
+	for i, v := range raw {
+		if s, ok := v.(string); ok {
+			out[i] = strings.ToLower(s)
+		} else {
+			out[i] = v
+		}
+	}
+	body["event_types"] = out
 }

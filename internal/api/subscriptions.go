@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"errors"
 	"net/url"
 )
 
@@ -104,6 +105,8 @@ func (c *Client) SubscriptionManagementURL(ctx context.Context, subID string) (s
 
 // SearchSubscriptions looks up a subscription by store id (App Store
 // transaction id, Play original_purchase_token, Stripe sub_..., etc.).
+// v2 returns 404 instead of an empty list when there are no matches;
+// we translate that to the empty list so callers get a uniform shape.
 func (c *Client) SearchSubscriptions(ctx context.Context, query string) ([]SubscriptionFull, error) {
 	if err := c.requireProject(); err != nil {
 		return nil, err
@@ -114,7 +117,14 @@ func (c *Client) SearchSubscriptions(ctx context.Context, query string) ([]Subsc
 	path := c.projectPath("/subscriptions/search?" + q.Encode())
 	var page listResp[SubscriptionFull]
 	if err := c.Do(ctx, "GET", path, nil, &page); err != nil {
+		var apiErr *APIError
+		if errors.As(err, &apiErr) && apiErr.IsNotFound() {
+			return []SubscriptionFull{}, nil
+		}
 		return nil, err
+	}
+	if page.Items == nil {
+		return []SubscriptionFull{}, nil
 	}
 	return page.Items, nil
 }
@@ -165,7 +175,8 @@ func (c *Client) RefundPurchase(ctx context.Context, purchaseID string) (map[str
 	return out, nil
 }
 
-// SearchPurchases looks up a purchase by store id.
+// SearchPurchases looks up a purchase by store id. v2 returns 404
+// instead of an empty list when there are no matches; we normalize.
 func (c *Client) SearchPurchases(ctx context.Context, query string) ([]PurchaseFull, error) {
 	if err := c.requireProject(); err != nil {
 		return nil, err
@@ -176,7 +187,14 @@ func (c *Client) SearchPurchases(ctx context.Context, query string) ([]PurchaseF
 	path := c.projectPath("/purchases/search?" + q.Encode())
 	var page listResp[PurchaseFull]
 	if err := c.Do(ctx, "GET", path, nil, &page); err != nil {
+		var apiErr *APIError
+		if errors.As(err, &apiErr) && apiErr.IsNotFound() {
+			return []PurchaseFull{}, nil
+		}
 		return nil, err
+	}
+	if page.Items == nil {
+		return []PurchaseFull{}, nil
 	}
 	return page.Items, nil
 }

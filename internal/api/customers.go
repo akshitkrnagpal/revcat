@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"strings"
 	"sync"
+	"time"
 )
 
 // Customer is the v2 representation of a single end-user (subscriber).
@@ -212,37 +213,53 @@ func (c *Client) SnapshotCustomer(ctx context.Context, customerID string) (*Cust
 	return snap, nil
 }
 
-// GrantEntitlementRequest is the body for the v2 grant action. Duration
-// accepts ISO-8601 ("P7D", "P1M", "P1Y") and the literal "lifetime".
+// GrantEntitlementRequest is the body for the v2 grant action. RC v2
+// expects an absolute expiry timestamp (milliseconds since Unix epoch),
+// not a duration. Use "forever" semantics by passing a far-future value.
 type GrantEntitlementRequest struct {
 	EntitlementID string `json:"entitlement_id"`
-	Duration      string `json:"duration"`
-	StartTime     int64  `json:"start_time_ms,omitempty"`
-	Reason        string `json:"reason,omitempty"`
+	ExpiresAt     int64  `json:"expires_at"`
 }
 
 // GrantEntitlement grants a promotional entitlement to a customer.
-// Wraps POST /customers/{id}/actions/grant_entitlement.
-func (c *Client) GrantEntitlement(ctx context.Context, customerID string, req GrantEntitlementRequest) (*ActiveEntitlement, error) {
+// Wraps POST /customers/{id}/actions/grant_entitlement. Returns the
+// updated customer record (active_entitlements + ids) which we surface
+// raw because the response shape is broad and changes.
+func (c *Client) GrantEntitlement(ctx context.Context, customerID string, req GrantEntitlementRequest) (map[string]any, error) {
 	if err := c.requireProject(); err != nil {
 		return nil, err
 	}
-	var out ActiveEntitlement
+	var out map[string]any
 	path := c.projectPath("/customers/" + url.PathEscape(customerID) + "/actions/grant_entitlement")
 	if err := c.Do(ctx, "POST", path, req, &out); err != nil {
 		return nil, err
 	}
-	return &out, nil
+	return out, nil
 }
 
-// RevokeEntitlement removes a promotional entitlement.
-// Wraps POST /customers/{id}/actions/revoke_entitlement.
+// RevokeEntitlement is implemented as "grant with a near-future expiry"
+// because v2 has no first-class revoke endpoint and rejects past
+// expires_at values ("must be in the future"). We pick now+1s, which
+// expires the grant within a second of the call. RC's customer info
+// will reflect the entitlement as expired on the next read.
 func (c *Client) RevokeEntitlement(ctx context.Context, customerID, entitlementID string) error {
 	if err := c.requireProject(); err != nil {
 		return err
 	}
-	path := c.projectPath("/customers/" + url.PathEscape(customerID) + "/actions/revoke_entitlement")
-	return c.Do(ctx, "POST", path, map[string]string{"entitlement_id": entitlementID}, nil)
+	body := GrantEntitlementRequest{
+		EntitlementID: entitlementID,
+		ExpiresAt:     timeNowMillis() + 1000,
+	}
+	path := c.projectPath("/customers/" + url.PathEscape(customerID) + "/actions/grant_entitlement")
+	return c.Do(ctx, "POST", path, body, nil)
+}
+
+// timeNowMillis returns current Unix time in milliseconds. Wrapped so
+// tests can stub.
+func timeNowMillis() int64 { return timeNowMillisFn() }
+
+var timeNowMillisFn = func() int64 {
+	return time.Now().UnixMilli()
 }
 
 // RefundTransaction issues a refund through the appropriate store.
@@ -302,46 +319,29 @@ func (c *Client) TransferCustomer(ctx context.Context, srcID, dstID string) erro
 	return c.Do(ctx, "POST", path, body, nil)
 }
 
-// OverrideOffering forces a specific offering on a customer (typically for
-// QA / cohort tests). Pass empty offeringID to clear the override.
-func (c *Client) OverrideOffering(ctx context.Context, customerID, offeringID string) error {
+// CustomerAttribute is one entry in the v2 attribute array.
+type CustomerAttribute struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
+}
+
+// GetAttributes returns subscriber attributes (paged list of name/value).
+func (c *Client) GetAttributes(ctx context.Context, customerID string) ([]CustomerAttribute, error) {
+	if err := c.requireProject(); err != nil {
+		return nil, err
+	}
+	return paginate[CustomerAttribute](ctx, c, c.projectPath("/customers/"+url.PathEscape(customerID)+"/attributes"))
+}
+
+// SetAttributes upserts subscriber attributes. v2 expects the body to
+// be {"attributes": [{"name": "...", "value": "..."}, ...]}.
+func (c *Client) SetAttributes(ctx context.Context, customerID string, attrs []CustomerAttribute) error {
 	if err := c.requireProject(); err != nil {
 		return err
 	}
-	body := map[string]any{"offering_id": offeringID}
-	path := c.projectPath("/customers/" + url.PathEscape(customerID) + "/actions/override_offering")
+	body := map[string]any{"attributes": attrs}
+	path := c.projectPath("/customers/" + url.PathEscape(customerID) + "/attributes")
 	return c.Do(ctx, "POST", path, body, nil)
-}
-
-// RestoreGooglePlayPurchase forces a Play Store entitlement re-check.
-func (c *Client) RestoreGooglePlayPurchase(ctx context.Context, customerID string) error {
-	if err := c.requireProject(); err != nil {
-		return err
-	}
-	path := c.projectPath("/customers/" + url.PathEscape(customerID) + "/actions/restore_google_play_purchase")
-	return c.Do(ctx, "POST", path, struct{}{}, nil)
-}
-
-// GetAttributes returns subscriber attributes (free-form key/value).
-func (c *Client) GetAttributes(ctx context.Context, customerID string) (map[string]any, error) {
-	if err := c.requireProject(); err != nil {
-		return nil, err
-	}
-	var out map[string]any
-	path := c.projectPath("/customers/" + url.PathEscape(customerID) + "/attributes")
-	if err := c.Do(ctx, "GET", path, nil, &out); err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-// SetAttributes upserts subscriber attributes.
-func (c *Client) SetAttributes(ctx context.Context, customerID string, attrs map[string]any) error {
-	if err := c.requireProject(); err != nil {
-		return err
-	}
-	path := c.projectPath("/customers/" + url.PathEscape(customerID) + "/attributes")
-	return c.Do(ctx, "POST", path, attrs, nil)
 }
 
 // ListInvoices pages a customer's invoices.
@@ -351,6 +351,16 @@ func (c *Client) ListInvoices(ctx context.Context, customerID string) ([]map[str
 	}
 	return paginate[map[string]any](ctx, c, c.projectPath("/customers/"+url.PathEscape(customerID)+"/invoices"))
 }
+
+// Note: v2 has no customer-scoped endpoints for the following actions.
+// They lived in v1 but the v2 surface either moved them or removed
+// them entirely. Smoke-tested 2026-04-25 against blank project; all
+// 404. Removed from the CLI rather than ship broken commands:
+//   - override_offering / set_offering_override
+//   - restore_google_play_purchase
+//   - virtual_currencies/balances (per-customer balance read)
+//   - virtual_currencies/transactions (per-customer credit/debit)
+//   - virtual_currencies_balances (per-customer set balance)
 
 // paginate is a generic helper for v2's cursor-paginated list endpoints.
 func paginate[T any](ctx context.Context, c *Client, basePath string) ([]T, error) {

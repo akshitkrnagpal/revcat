@@ -92,7 +92,7 @@ var viewCmd = &cobra.Command{
 		if len(o.Packages) > 0 {
 			pkgRows := make([][]any, 0, len(o.Packages))
 			for _, p := range o.Packages {
-				pkgRows = append(pkgRows, []any{p.Position, p.Identifier, cliutil.Dash(p.ProductID)})
+				pkgRows = append(pkgRows, []any{p.Position, p.LookupKey, cliutil.Dash(p.ProductID)})
 			}
 			return output.Table([]string{"#", "identifier", "product"}, pkgRows)
 		}

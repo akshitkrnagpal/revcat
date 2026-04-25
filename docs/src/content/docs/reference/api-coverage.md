@@ -10,8 +10,9 @@ Source of truth: <https://www.revenuecat.com/docs/api-v2>.
 
 ## Headline
 
-- Every v2 operation reachable with a per-project secret key is wrapped.
-- A small slice (project create, app CRUD, collaborators) needs a partner-tier key and is out of scope.
+- Most v2 operations reachable with a per-project secret key are wrapped and smoke-tested.
+- A few endpoints don't exist on the v2 customer surface at all - documented at the bottom.
+- A small slice (project create, app CRUD, collaborators) needs a partner-tier key.
 - RC v2 has no REST events firehose; lifecycle events are webhook-delivered. revcat exposes webhook CRUD; subscribe your own endpoint with `revcat webhooks create`.
 
 ## Coverage
@@ -45,8 +46,8 @@ Source of truth: <https://www.revenuecat.com/docs/api-v2>.
 | `POST /customers/{id}/actions/transfer` | `revcat subscribers transfer` |
 | `POST /customers/{id}/actions/grant_entitlement` | `revcat subscribers grant` |
 | `POST /customers/{id}/actions/revoke_entitlement` | `revcat subscribers revoke` |
-| `POST /customers/{id}/actions/override_offering` | `revcat subscribers override-offering` |
-| `POST /customers/{id}/actions/restore_google_play_purchase` | `revcat subscribers restore-google-play` |
+| `POST /customers/{id}/actions/override_offering` | - (endpoint 404 on v2; removed in v0.1.2) |
+| `POST /customers/{id}/actions/restore_google_play_purchase` | - (endpoint 404 on v2; removed in v0.1.2) |
 | `GET /customers/{id}/subscriptions` | `revcat subscribers info` |
 | `GET /customers/{id}/purchases` | `revcat subscribers info` |
 | `GET /customers/{id}/active_entitlements` | `revcat subscribers info` |
@@ -54,9 +55,9 @@ Source of truth: <https://www.revenuecat.com/docs/api-v2>.
 | `GET /customers/{id}/invoices` | `revcat subscribers invoices` |
 | `GET /customers/{id}/attributes` | `revcat subscribers attributes` |
 | `POST /customers/{id}/attributes` | `revcat subscribers attributes --set` |
-| `GET /customers/{id}/virtual_currencies_balances` | `revcat subscribers vc-balance` |
-| `POST /customers/{id}/virtual_currencies/transactions` | `revcat subscribers vc-tx` |
-| `POST /customers/{id}/virtual_currencies_balances` | `revcat subscribers vc-set-balance` |
+| `GET /customers/{id}/virtual_currencies_balances` | - (endpoint 404 on v2; removed in v0.1.2) |
+| `POST /customers/{id}/virtual_currencies/transactions` | - (endpoint 404 on v2; removed in v0.1.2) |
+| `POST /customers/{id}/virtual_currencies_balances` | - (endpoint 404 on v2; removed in v0.1.2) |
 
 ### Entitlements
 
@@ -170,12 +171,12 @@ Source of truth: <https://www.revenuecat.com/docs/api-v2>.
 | API operation | revcat |
 | --- | --- |
 | `GET /virtual_currencies` | `revcat virtual-currencies list` |
-| `GET /virtual_currencies/{id}` | `revcat virtual-currencies view` |
+| `GET /virtual_currencies/{code}` | `revcat virtual-currencies view <CODE>` |
 | `POST /virtual_currencies` | `revcat virtual-currencies create` |
-| `POST /virtual_currencies/{id}` | `revcat virtual-currencies update` |
-| `DELETE /virtual_currencies/{id}` | `revcat virtual-currencies delete` |
-| `POST /virtual_currencies/{id}/actions/archive` | `revcat virtual-currencies archive` |
-| `POST /virtual_currencies/{id}/actions/unarchive` | `revcat virtual-currencies unarchive` |
+| `POST /virtual_currencies/{code}` | `revcat virtual-currencies update <CODE>` |
+| `DELETE /virtual_currencies/{code}` | `revcat virtual-currencies delete <CODE>` |
+| `POST /virtual_currencies/{code}/actions/archive` | `revcat virtual-currencies archive <CODE>` |
+| `POST /virtual_currencies/{code}/actions/unarchive` | `revcat virtual-currencies unarchive <CODE>` |
 
 ### Charts & metrics
 
@@ -191,8 +192,16 @@ Source of truth: <https://www.revenuecat.com/docs/api-v2>.
 - App CRUD (`POST /apps`, `POST /apps/{id}`, `DELETE /apps/{id}`)
 - `GET /collaborators`
 
-## Not exposed by v2 REST
+## Not exposed by v2 REST (or rejects project secret keys)
+
+These endpoints either return 404 across the v2 customer surface or are gated behind a higher-tier key. Smoke-tested 2026-04-25:
 
 - An events firehose. RC delivers lifecycle events (purchases, renewals, cancellations, refunds, ...) via webhooks. revcat covers webhook CRUD; subscribe your endpoint with `revcat webhooks create`.
+- `POST /customers/{id}/actions/override_offering`
+- `POST /customers/{id}/actions/restore_google_play_purchase`
+- `GET /customers/{id}/virtual_currencies_balances`
+- `POST /customers/{id}/virtual_currencies/transactions`
+- `POST /customers/{id}/virtual_currencies_balances`
+- `POST /customers/{id}/actions/revoke_entitlement` (no-op in revcat: implemented as "grant with near-future expires_at")
 
 These need a project-management / partner-tier API key. revcat targets the per-project secret key, so they live in the dashboard.

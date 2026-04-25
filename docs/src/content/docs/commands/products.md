@@ -34,11 +34,28 @@ Aliases: `prod`.
 
 ## Body shape (create)
 
+For App Store / Play Store / Stripe / Web Billing apps:
+
 ```json
 {
   "store_identifier": "app.monthly",
   "type": "subscription",
   "display_name": "Monthly",
-  "app_id": "app_xxx"
+  "app_id": "app_xxx",
+  "subscription": { "duration": "P1M" }
 }
 ```
+
+Test Store apps require `title` instead of `display_name`:
+
+```json
+{
+  "store_identifier": "com.test.monthly",
+  "type": "subscription",
+  "title": "Monthly",
+  "app_id": "app_xxx",
+  "subscription": { "duration": "P1M" }
+}
+```
+
+Type values: `subscription`, `one_time`, `consumable`, `non_consumable`, `non_renewing_subscription`.

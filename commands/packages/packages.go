@@ -56,7 +56,7 @@ var listCmd = &cobra.Command{
 		}
 
 		var rows [][]any
-		var pkgs []api.Package
+		pkgs := []api.Package{} // never nil - so JSON encoding produces [] not null
 		for _, off := range offerings {
 			ps, err := client.ListPackages(ctx, off)
 			if err != nil {
@@ -65,7 +65,7 @@ var listCmd = &cobra.Command{
 			}
 			for _, p := range ps {
 				pkgs = append(pkgs, p)
-				rows = append(rows, []any{off, p.Position, p.Identifier, cliutil.Dash(p.ProductID), p.ID})
+				rows = append(rows, []any{off, p.Position, p.LookupKey, cliutil.Dash(p.ProductID), p.ID})
 			}
 		}
 
@@ -100,7 +100,7 @@ var viewCmd = &cobra.Command{
 		}
 		rows := [][]any{
 			{"id", p.ID},
-			{"identifier", p.Identifier},
+			{"identifier", p.LookupKey},
 			{"position", p.Position},
 			{"offering_id", cliutil.Dash(p.OfferingID)},
 			{"product_id", cliutil.Dash(p.ProductID)},
@@ -110,24 +110,46 @@ var viewCmd = &cobra.Command{
 	},
 }
 
-var createFile string
+var (
+	createFile     string
+	createKey      string
+	createName     string
+	createPosition int
+)
 
 var createCmd = &cobra.Command{
-	Use:   "create",
-	Short: "Create a package from a JSON body",
-	Long: `Create a package. Required fields per v2: identifier, offering_id.
-Pass them inside --file <path>.
+	Use:   "create <offering>",
+	Short: "Create a package under an offering",
+	Long: `Create a package under an offering (passed as id or lookup_key).
 
-Example body:
+Common case via flags:
+
+    revcat packages create default --id '$rc_monthly' --display-name "Monthly"
+
+Or pass an arbitrary v2 body via --file:
+
     {
-      "identifier": "$rc_monthly",
-      "offering_id": "ofr_xxx",
-      "position": 1
+      "lookup_key": "$rc_monthly",
+      "display_name": "Monthly",
+      "position": 0
     }`,
+	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		body, err := cliutil.LoadJSON(createFile)
-		if err != nil {
-			return err
+		var body map[string]any
+		if createFile != "" {
+			b, err := cliutil.LoadJSON(createFile)
+			if err != nil {
+				return err
+			}
+			body = b
+		} else if createKey != "" {
+			body = map[string]any{"lookup_key": createKey}
+			if createName != "" {
+				body["display_name"] = createName
+			}
+			body["position"] = createPosition
+		} else {
+			return errors.New("pass --file or --id")
 		}
 		client, _, err := cliutil.Client(cmd)
 		if err != nil {
@@ -135,7 +157,7 @@ Example body:
 		}
 		ctx, cancel := context.WithTimeout(cmd.Context(), 30*time.Second)
 		defer cancel()
-		p, err := client.CreatePackage(ctx, body)
+		p, err := client.CreatePackage(ctx, args[0], body)
 		if err != nil {
 			return err
 		}
@@ -149,7 +171,9 @@ Example body:
 
 func init() {
 	createCmd.Flags().StringVarP(&createFile, "file", "f", "", "Body as JSON file")
-	_ = createCmd.MarkFlagRequired("file")
+	createCmd.Flags().StringVar(&createKey, "id", "", "Package lookup_key (e.g., $rc_monthly)")
+	createCmd.Flags().StringVar(&createName, "display-name", "", "Display name")
+	createCmd.Flags().IntVar(&createPosition, "position", 0, "Position in the offering (0-indexed)")
 }
 
 var updateFile string
@@ -243,10 +267,19 @@ var productsCmd = &cobra.Command{
 	},
 }
 
+var attachEligibility string
+
 var attachCmd = &cobra.Command{
-	Use:   "attach <id> <product_id> [<product_id> ...]",
+	Use:   "attach <pkg_id> <product_id> [<product_id> ...]",
 	Short: "Attach product(s) to a package",
-	Args:  cobra.MinimumNArgs(2),
+	Long: `Attach products to a package. RC v2 stores per-attachment eligibility
+criteria - the same product can have different eligibility on different
+packages. Default is "all" which serves the product to every customer.
+
+Other supported values: "google_sdk_lt_6", "google_sdk_ge_6" (used to
+gate attachment by SDK version on Android). Pass --eligibility to
+override the default.`,
+	Args: cobra.MinimumNArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		client, _, err := cliutil.Client(cmd)
 		if err != nil {
@@ -254,12 +287,23 @@ var attachCmd = &cobra.Command{
 		}
 		ctx, cancel := context.WithTimeout(cmd.Context(), 30*time.Second)
 		defer cancel()
-		if err := client.AttachProductsToPackage(ctx, args[0], args[1:]); err != nil {
+		attachments := make([]api.PackageProductAttachment, 0, len(args)-1)
+		for _, pid := range args[1:] {
+			attachments = append(attachments, api.PackageProductAttachment{
+				ProductID:           pid,
+				EligibilityCriteria: attachEligibility,
+			})
+		}
+		if err := client.AttachProductsToPackage(ctx, args[0], attachments); err != nil {
 			return err
 		}
 		output.Success("attached %d product(s) to %s", len(args)-1, args[0])
 		return nil
 	},
+}
+
+func init() {
+	attachCmd.Flags().StringVar(&attachEligibility, "eligibility", "all", "Eligibility criteria for the attachment: all | google_sdk_lt_6 | google_sdk_ge_6")
 }
 
 var detachCmd = &cobra.Command{
