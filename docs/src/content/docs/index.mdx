@@ -1,0 +1,66 @@
+---
+title: revcat
+description: The RevenueCat CLI. Run your RevenueCat project from the terminal instead of clicking through the dashboard.
+template: splash
+hero:
+  tagline: Run your RevenueCat project from the terminal instead of clicking through the dashboard.
+  actions:
+    - text: Install
+      link: /getting-started/installation/
+      icon: right-arrow
+      variant: primary
+    - text: GitHub
+      link: https://github.com/akshitkrnagpal/revcat
+      icon: external
+      variant: minimal
+---
+
+import { Card, CardGrid, Code } from "@astrojs/starlight/components";
+
+## Quick start
+
+Sign in once, then everything is one command away.
+
+```sh
+# install (Go 1.23+)
+go install github.com/akshitkrnagpal/revcat/cmd/revcat@latest
+
+# auth
+revcat auth login --name my-app --secret-key sk_xxx
+
+# debug a customer
+revcat subscribers info app_user_123
+
+# tail purchases live
+revcat events tail --type INITIAL_PURCHASE,CANCELLATION
+
+# deploy a paywall
+revcat publish offering pro --paywall ./paywalls/pro.json
+```
+
+<CardGrid>
+  <Card title="Imperative verbs" icon="rocket">
+    `publish`, `grant`, `refund`, `tail` - one command, one workflow. No
+    declarative state files, no plan/apply ceremony.
+  </Card>
+  <Card title="JSON-first" icon="document">
+    Tables when you're at a terminal, JSON when you pipe into a script.
+    Built for `jq`, CI, and Claude Code.
+  </Card>
+  <Card title="Keychain auth" icon="setting">
+    Profiles in your OS keychain by default. `--bypass-keychain` for CI
+    and containers. Multiple named profiles for dev / staging / prod.
+  </Card>
+  <Card title="Full v2 coverage" icon="approve-check">
+    Every v2 endpoint a per-project secret key can reach is wrapped:
+    entitlements, offerings, products, paywalls, customers, events,
+    metrics, webhooks, virtual currencies.
+  </Card>
+</CardGrid>
+
+## What's next
+
+- [Installation](/getting-started/installation/) - Homebrew, `go install`, and pre-built binaries
+- [Quickstart](/getting-started/quickstart/) - sign in and run your first command in 60 seconds
+- [Commands](/commands/) - reference for every subcommand
+- [Configuration](/reference/configuration/) - env vars, profiles, output formats

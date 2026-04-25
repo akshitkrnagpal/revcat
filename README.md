@@ -167,6 +167,30 @@ revcat doctor                            # top-level health check
 revcat auth doctor                       # auth-specific
 ```
 
+## Documentation
+
+Full docs at <https://revcat.vercel.app> - install, quickstart, every command, configuration, and guides. Source lives in [`docs/`](./docs/).
+
+## AI agent support
+
+revcat ships [Agent Skills](./skills/) (open standard, distributable via skills.sh) so Claude Code, Cursor, and Codex can compose revcat commands accurately:
+
+- `revcat-getting-started` - install, auth, top-level command map
+- `revcat-commands` - real syntax + examples for every subcommand
+- `revcat-troubleshooting` - common errors and fixes
+
+Install locally:
+
+```sh
+# Claude Code (project-scoped)
+mkdir -p .claude/skills && cp -R skills/revcat-* .claude/skills/
+
+# Claude Code (user-scoped, every project)
+mkdir -p ~/.claude/skills && cp -R skills/revcat-* ~/.claude/skills/
+```
+
+See [`skills/README.md`](./skills/README.md) for Cursor and Codex install steps.
+
 ## License
 
 MIT

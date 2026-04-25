@@ -1,0 +1,4 @@
+/* Default to dark mode. Users can still toggle to light. */
+:root {
+  color-scheme: dark;
+}

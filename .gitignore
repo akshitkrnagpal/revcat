@@ -5,3 +5,12 @@
 .env.local
 .DS_Store
 *.log
+
+# docs (Astro Starlight)
+docs/node_modules/
+docs/dist/
+docs/.astro/
+docs/.vercel/
+
+# skills (none yet, but keep the slot tidy)
+skills/node_modules/

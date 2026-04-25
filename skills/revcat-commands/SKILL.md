@@ -1,0 +1,182 @@
+---
+name: revcat-commands
+description: Use when constructing a revcat command. Reference for every subcommand with real syntax and examples for entitlements, offerings, products, paywalls, subscribers, subscriptions, events, webhooks, metrics. Triggers on "revcat <command>", "how do I X with revcat".
+---
+
+# revcat - command reference
+
+Commands below are the real surface as of the latest revcat. Verify with `revcat <group> --help` if anything looks off.
+
+Conventions:
+
+- `<id>` = literal id RC returns. Often a lookup_key like `premium`, sometimes an internal id like `pkg_xxx`.
+- `--file <path>` = JSON body on disk (or `-` for stdin). Used wherever the v2 schema is broad.
+- `-y / --confirm` = skip the destructive-action prompt.
+
+## auth
+
+```sh
+revcat auth login --name my-app --secret-key sk_xxx [--project-id proj_xxx] [--no-verify]
+revcat auth status [--validate]
+revcat auth doctor
+revcat auth use <name>
+revcat auth list
+revcat auth logout [<name>] [--all] [-y]
+```
+
+## projects, apps
+
+```sh
+revcat projects list
+revcat projects view [<id>]                   # default: active profile's project
+
+revcat apps list
+revcat apps view <app_id>
+revcat apps public-keys <app_id>
+revcat apps storekit-config <app_id>          # raw JSON
+```
+
+## Catalog
+
+```sh
+revcat entitlements list
+revcat entitlements view <id>
+revcat entitlements create --id premium --display-name "Premium"
+revcat entitlements create --file ./entitlement.json
+revcat entitlements update <id> --display-name "New name" | --file ./patch.json
+revcat entitlements delete <id> [-y]
+revcat entitlements archive <id>
+revcat entitlements unarchive <id>
+revcat entitlements products <id>
+revcat entitlements attach <id> <product_id> [<product_id> ...]
+revcat entitlements detach <id> <product_id> [<product_id> ...]
+
+revcat offerings list                           # current marked with *
+revcat offerings view <id>
+revcat offerings create --id pro --display-name "Pro" | --file ./offering.json
+revcat offerings update <id> --display-name "..." | --file ./patch.json
+revcat offerings delete <id> [-y]
+revcat offerings archive <id>
+revcat offerings unarchive <id>
+revcat offerings set-current <id>
+
+revcat packages list [--offering <id>]
+revcat packages view <pkg_id>
+revcat packages create --file ./package.json    # body: identifier + offering_id
+revcat packages update <pkg_id> --file ./patch.json
+revcat packages delete <pkg_id> [-y]
+revcat packages products <pkg_id>
+revcat packages attach <pkg_id> <product_id> ...
+revcat packages detach <pkg_id> <product_id> ...
+
+revcat products list
+revcat products view <id>
+revcat products create --file ./product.json    # body: store_identifier, type, display_name, app_id
+revcat products update <id> --display-name "..." | --file ./patch.json
+revcat products delete <id> [-y]
+revcat products archive <id>
+revcat products unarchive <id>
+revcat products push-to-store <id>
+
+revcat paywalls list
+revcat paywalls view <id>                       # raw JSON
+revcat paywalls create --file ./paywall.json
+revcat paywalls delete <id> [-y]
+```
+
+## Customers (subscribers)
+
+```sh
+revcat subscribers info <user_id>               # the headline debug card
+revcat subscribers list                          # paged
+revcat subscribers create <user_id> [--file ./body.json]
+revcat subscribers delete <user_id> [-y]
+revcat subscribers transfer <src> <dst> [-y]
+revcat subscribers grant <user> <ent> -d <dur> [-r "reason"] [-y]
+revcat subscribers revoke <user> <ent> [-y]
+revcat subscribers refund <subscription_id> <transaction_id> [-y]
+revcat subscribers override-offering <user> [<offering>] | --clear
+revcat subscribers restore-google-play <user>
+
+revcat subscribers attributes <user>             # get
+revcat subscribers attributes <user> --set k=v --set k2=v2 [--file ./attrs.json]
+
+revcat subscribers invoices <user>
+revcat subscribers vc-balance <user>
+revcat subscribers vc-tx <user> --currency <vc_id> --amount <n> [--reason "..."]
+revcat subscribers vc-tx <user> --file ./tx.json
+revcat subscribers vc-set-balance <user> --file ./balance.json
+```
+
+`grant -d / --duration` accepts: `forever` / `lifetime`, `7d` / `30d` / `90d`, `1m` / `1y`, RC built-ins (`daily`, `weekly`, `monthly`, `yearly`).
+
+## Subscriptions, purchases, invoices
+
+```sh
+revcat subscriptions search <store_id>           # find by App Store / Play / Stripe id
+revcat subscriptions view <sub_id>
+revcat subscriptions transactions <sub_id>
+revcat subscriptions entitlements <sub_id>
+revcat subscriptions management-url <sub_id>
+revcat subscriptions cancel <sub_id> [-y]        # Web Billing
+revcat subscriptions refund <sub_id> [-y]        # Web Billing
+
+revcat purchases search <store_id>
+revcat purchases view <purchase_id>
+revcat purchases entitlements <purchase_id>
+revcat purchases refund <purchase_id> [-y]       # Web Billing
+
+revcat invoices view <invoice_id>                # raw JSON
+```
+
+## Activity
+
+```sh
+revcat events list [--type T1,T2] [--since 1h|RFC3339] [--limit 100]
+revcat events tail [--type T1,T2] [--since 1h] [--interval 5s]   # ndjson when piped
+
+revcat metrics overview
+
+revcat charts options <chart_name>
+revcat charts get <chart_name> [--start YYYY-MM-DD] [--end YYYY-MM-DD] \
+    [--period day|week|month] [--filter k=v ...]
+```
+
+Common event types: `INITIAL_PURCHASE`, `RENEWAL`, `CANCELLATION`, `EXPIRATION`, `TRIAL_STARTED`, `TRIAL_CONVERTED`, `REFUND`, `BILLING_ISSUE`, `PRODUCT_CHANGE`.
+
+## Verb-orchestrator
+
+```sh
+revcat publish offering <id> [--current] [--no-current] [--paywall ./paywall.json] [-y] [--dry-run]
+```
+
+Composes set-current + paywall PUT behind one plan. Existing paywall is fetched lazily; if its hash matches the file, the PUT is skipped.
+
+## Integrations
+
+```sh
+revcat webhooks list
+revcat webhooks view <id>
+revcat webhooks create --url https://... --events INITIAL_PURCHASE,CANCELLATION [--description "..."]
+revcat webhooks create --file ./webhook.json
+revcat webhooks update <id> --url ... | --events ... | --disabled true|false | --file ./patch.json
+revcat webhooks delete <id> [-y]
+
+revcat virtual-currencies list
+revcat virtual-currencies view <id>
+revcat virtual-currencies create --file ./vc.json    # body: lookup_key, display_name, code
+revcat virtual-currencies update <id> --file ./patch.json
+revcat virtual-currencies delete <id> [-y]
+revcat virtual-currencies archive <id>
+revcat virtual-currencies unarchive <id>
+```
+
+## Output controls (every command)
+
+```sh
+... --output json --pretty               # force JSON pretty
+... --output table                       # force table even when piped
+REVCAT_DEFAULT_OUTPUT=json revcat ...   # session default
+NO_COLOR=1 revcat ...                    # disable color
+REVCAT_DEBUG=api revcat ...              # log full request/response (key redacted)
+```

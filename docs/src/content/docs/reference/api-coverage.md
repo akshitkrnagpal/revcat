@@ -1,4 +1,8 @@
-# RevenueCat v2 API coverage
+---
+title: API coverage
+description: Map every RevenueCat v2 operation to the revcat command that wraps it.
+---
+
 
 revcat aims for full v2 coverage with the per-project secret key. This file maps every documented operation to the revcat command that wraps it.
 
