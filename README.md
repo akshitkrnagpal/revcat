@@ -7,6 +7,8 @@
 
 The RevenueCat CLI. Run your RevenueCat project from the terminal instead of clicking through the dashboard.
 
+![revcat demo](./demo/demo.gif)
+
 ```sh
 revcat auth login --name my-app --secret-key sk_xxx
 revcat subscribers info app_user_123
