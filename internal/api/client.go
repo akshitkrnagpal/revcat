@@ -25,11 +25,29 @@ const userAgent = "revcat-cli"
 // envDebug toggles full request/response logging (key redacted).
 const envDebug = "REVCAT_DEBUG"
 
+// TokenSource hands out a current bearer token. Used to plug in either a
+// static secret key or an OAuth flow that auto-refreshes. token() is
+// called before each request, so an OAuth implementation can do a
+// refresh round-trip on the fly without the caller knowing.
+type TokenSource interface {
+	Token(ctx context.Context) (string, error)
+}
+
+// staticToken is the trivial source for project secret keys.
+type staticToken string
+
+func (s staticToken) Token(_ context.Context) (string, error) {
+	if s == "" {
+		return "", errors.New("no auth token configured")
+	}
+	return string(s), nil
+}
+
 // Client talks to the RC v2 REST API on behalf of a single profile.
 type Client struct {
 	http      *http.Client
 	baseURL   string
-	secretKey string
+	tokenSrc  TokenSource
 	projectID string
 	debug     bool
 	version   string
@@ -37,11 +55,15 @@ type Client struct {
 
 // New constructs a Client. SecretKey is required; ProjectID may be empty
 // for endpoints that don't need it (auth checks, project listing).
+//
+// Pass TokenSource for OAuth profiles where the access token rotates;
+// otherwise pass SecretKey and revcat builds a static source.
 type Options struct {
-	SecretKey string
-	ProjectID string
-	BaseURL   string
-	Version   string
+	SecretKey   string
+	TokenSource TokenSource
+	ProjectID   string
+	BaseURL     string
+	Version     string
 }
 
 func New(opts Options) *Client {
@@ -49,10 +71,14 @@ func New(opts Options) *Client {
 	if base == "" {
 		base = BaseURL
 	}
+	src := opts.TokenSource
+	if src == nil {
+		src = staticToken(opts.SecretKey)
+	}
 	return &Client{
 		http:      &http.Client{Timeout: 30 * time.Second},
 		baseURL:   base,
-		secretKey: opts.SecretKey,
+		tokenSrc:  src,
 		projectID: opts.ProjectID,
 		debug:     strings.Contains(os.Getenv(envDebug), "api"),
 		version:   opts.Version,
@@ -119,7 +145,11 @@ func (c *Client) doRaw(ctx context.Context, method, path string, body any, out a
 		if err != nil {
 			return nil, err
 		}
-		req.Header.Set("Authorization", "Bearer "+c.secretKey)
+		token, err := c.tokenSrc.Token(ctx)
+		if err != nil {
+			return fmt.Errorf("auth: %w", err)
+		}
+		req.Header.Set("Authorization", "Bearer "+token)
 		req.Header.Set("Accept", "application/json")
 		req.Header.Set("User-Agent", userAgent+"/"+c.version)
 		if body != nil {

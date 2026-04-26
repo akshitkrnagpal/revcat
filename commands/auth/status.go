@@ -51,12 +51,27 @@ func runStatus(cmd *cobra.Command, args []string) error {
 	rows := [][]any{
 		{"profile", profile.Name},
 		{"source", source},
-		{"secret_key", redactKey(profile.SecretKey)},
-		{"project_id", emptyDash(profile.ProjectID)},
+		{"auth_type", string(profile.EffectiveAuthType())},
 	}
+	if profile.EffectiveAuthType() == authstore.AuthTypeOAuth {
+		rows = append(rows,
+			[]any{"access_token", redactKey(profile.AccessToken)},
+			[]any{"expires", expiresLine(profile.ExpiresAt)},
+			[]any{"scope", emptyDash(profile.Scope)},
+		)
+	} else {
+		rows = append(rows, []any{"secret_key", redactKey(profile.SecretKey)})
+	}
+	rows = append(rows, []any{"project_id", emptyDash(profile.ProjectID)})
 
 	if statusValidate {
-		client := api.New(api.Options{SecretKey: profile.SecretKey, ProjectID: profile.ProjectID, Version: cmd.Root().Version})
+		opts := api.Options{ProjectID: profile.ProjectID, Version: cmd.Root().Version}
+		if profile.EffectiveAuthType() == authstore.AuthTypeOAuth {
+			opts.TokenSource = authstore.NewOAuthTokenSource(store, profile)
+		} else {
+			opts.SecretKey = profile.SecretKey
+		}
+		client := api.New(opts)
 		ctx, cancel := context.WithTimeout(cmd.Context(), 10*time.Second)
 		defer cancel()
 		projects, err := client.ListProjects(ctx)
@@ -71,6 +86,18 @@ func runStatus(cmd *cobra.Command, args []string) error {
 	}
 
 	return output.Table([]string{"field", "value"}, rows)
+}
+
+func expiresLine(ms int64) string {
+	if ms == 0 {
+		return "-"
+	}
+	t := time.UnixMilli(ms).Local()
+	delta := time.Until(t)
+	if delta < 0 {
+		return t.Format("2006-01-02 15:04 MST") + " (EXPIRED)"
+	}
+	return t.Format("2006-01-02 15:04 MST")
 }
 
 func emptyDash(s string) string {

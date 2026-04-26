@@ -50,13 +50,28 @@ func runAuthDoctor(cmd *cobra.Command, args []string) error {
 	}
 	checks = append(checks, check{name: "active profile", ok: true, msg: profile.Name})
 
-	if !strings.HasPrefix(profile.SecretKey, "sk_") {
-		checks = append(checks, check{name: "key format", ok: false, msg: "stored key does not start with sk_", hint: "v2 secret keys begin with sk_; double-check it isn't a public SDK key"})
-	} else {
-		checks = append(checks, check{name: "key format", ok: true, msg: "looks like a v2 secret key"})
+	authType := profile.EffectiveAuthType()
+	checks = append(checks, check{name: "auth type", ok: true, msg: string(authType)})
+
+	opts := api.Options{ProjectID: profile.ProjectID, Version: cmd.Root().Version}
+	switch authType {
+	case authstore.AuthTypeOAuth:
+		if profile.AccessToken == "" {
+			checks = append(checks, check{name: "oauth token", ok: false, msg: "no access_token on profile", hint: "rerun `revcat auth login --oauth`"})
+		} else {
+			checks = append(checks, check{name: "oauth token", ok: true, msg: "present"})
+		}
+		opts.TokenSource = authstore.NewOAuthTokenSource(store, profile)
+	default:
+		if !strings.HasPrefix(profile.SecretKey, "sk_") {
+			checks = append(checks, check{name: "key format", ok: false, msg: "stored key does not start with sk_", hint: "v2 secret keys begin with sk_; double-check it isn't a public SDK key"})
+		} else {
+			checks = append(checks, check{name: "key format", ok: true, msg: "looks like a v2 secret key"})
+		}
+		opts.SecretKey = profile.SecretKey
 	}
 
-	client := api.New(api.Options{SecretKey: profile.SecretKey, ProjectID: profile.ProjectID, Version: cmd.Root().Version})
+	client := api.New(opts)
 	ctx, cancel := context.WithTimeout(cmd.Context(), 10*time.Second)
 	defer cancel()
 	projects, apiErr := client.ListProjects(ctx)

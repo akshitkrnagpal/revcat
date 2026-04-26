@@ -36,11 +36,44 @@ const envProjectID = "REVCAT_PROJECT_ID"
 
 const defaultProfile = "default"
 
-// Profile is the credential set we persist per name.
+// AuthType discriminates between the two credential models a profile
+// can hold. Default ("" or "secret_key") is the original v2 secret-key
+// flow. "oauth" stores an access/refresh token pair.
+type AuthType string
+
+const (
+	AuthTypeSecretKey AuthType = "secret_key"
+	AuthTypeOAuth     AuthType = "oauth"
+)
+
+// Profile is the credential set we persist per name. Supports two auth
+// models discriminated by AuthType:
+//
+//   - secret_key (default): SecretKey is set, tokens are empty.
+//   - oauth: AccessToken/RefreshToken/ExpiresAt are set, SecretKey empty.
+//
+// Profiles created before AuthType existed default to secret_key on read.
 type Profile struct {
-	Name      string `json:"name"`
-	SecretKey string `json:"secret_key"`
-	ProjectID string `json:"project_id,omitempty"`
+	Name      string   `json:"name"`
+	AuthType  AuthType `json:"auth_type,omitempty"`
+	SecretKey string   `json:"secret_key,omitempty"`
+	ProjectID string   `json:"project_id,omitempty"`
+
+	// OAuth fields (only set when AuthType == AuthTypeOAuth).
+	AccessToken  string `json:"access_token,omitempty"`
+	RefreshToken string `json:"refresh_token,omitempty"`
+	ExpiresAt    int64  `json:"expires_at_ms,omitempty"`
+	Scope        string `json:"scope,omitempty"`
+	ClientID     string `json:"client_id,omitempty"`
+}
+
+// EffectiveAuthType returns AuthType, defaulting to secret_key for legacy
+// profiles that predate the field.
+func (p *Profile) EffectiveAuthType() AuthType {
+	if p.AuthType == "" {
+		return AuthTypeSecretKey
+	}
+	return p.AuthType
 }
 
 // ErrNoProfile is returned when the requested profile doesn't exist.

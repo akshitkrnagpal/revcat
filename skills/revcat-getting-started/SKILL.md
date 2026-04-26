@@ -23,7 +23,7 @@ Pre-built binaries for every platform are on the [GitHub Releases page](https://
 
 ## Auth (one-time)
 
-revcat reads a v2 secret key (`sk_...`) and stores it in the OS keychain.
+revcat supports two credential models. The default is a v2 secret key:
 
 Pipe the key in via stdin so it does not land in your shell history:
 
@@ -34,6 +34,13 @@ revcat auth doctor             # verify
 
 `--secret-key sk_...` works too, but the key is visible in shell history and
 process listings. Prefer `--secret-key-stdin` for production and CI.
+
+Browser-based OAuth (PKCE) login is also supported:
+
+```sh
+revcat auth login --oauth --name my-app
+# tokens auto-refresh on every command thereafter
+```
 
 For CI / Docker (no keychain), use one of:
 

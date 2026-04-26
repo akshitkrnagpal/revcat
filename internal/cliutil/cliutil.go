@@ -30,6 +30,9 @@ func Profile(cmd *cobra.Command) string {
 // Client opens the credential store, resolves the active profile, and
 // returns a ready-to-use API client. Returns an error if the profile is
 // missing or the store can't be opened. Most commands use this.
+//
+// For OAuth profiles, the returned client carries a refreshing
+// TokenSource that updates the stored profile on each refresh.
 func Client(cmd *cobra.Command) (*api.Client, *authstore.Profile, error) {
 	store, err := authstore.Open(BypassKeychain(cmd))
 	if err != nil {
@@ -39,10 +42,14 @@ func Client(cmd *cobra.Command) (*api.Client, *authstore.Profile, error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	c := api.New(api.Options{
-		SecretKey: prof.SecretKey,
+	opts := api.Options{
 		ProjectID: prof.ProjectID,
 		Version:   cmd.Root().Version,
-	})
-	return c, prof, nil
+	}
+	if prof.EffectiveAuthType() == authstore.AuthTypeOAuth {
+		opts.TokenSource = authstore.NewOAuthTokenSource(store, prof)
+	} else {
+		opts.SecretKey = prof.SecretKey
+	}
+	return api.New(opts), prof, nil
 }

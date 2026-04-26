@@ -22,23 +22,33 @@ var (
 	loginSecretStdin bool
 	loginProjectID   string
 	loginNoVerify    bool
+	loginOAuth       bool
+	loginClientID    string
+	loginScopes      []string
 )
 
 var loginCmd = &cobra.Command{
 	Use:   "login",
-	Short: "Save a RevenueCat secret key as a named profile",
-	Long: `Save a RevenueCat v2 secret key (sk_...) as a named profile.
+	Short: "Save credentials as a named profile",
+	Long: `Save credentials as a named profile. Two auth modes are supported:
 
-Without flags this is interactive. With flags it's scriptable. The key is
-written to your OS keychain unless --bypass-keychain is set, in which case
-it's written to ./.revcat/config.json (a .gitignore is created on first use).
+(1) v2 secret key (default): pass --secret-key sk_..., pipe via
+    --secret-key-stdin, or be prompted. Stored in the OS keychain (or
+    ./.revcat/config.json with --bypass-keychain).
+
+(2) OAuth (PKCE): pass --oauth. revcat opens your browser, you authorize
+    against RevenueCat, and the access + refresh tokens are stored on
+    the profile. Uses the public revcat OAuth client by default;
+    override with REVCAT_OAUTH_CLIENT_ID or --client-id.
 
 Examples:
-  revcat auth login                                                   # interactive
+  revcat auth login                                                   # interactive secret-key
   echo $RC_KEY | revcat auth login --name prod --secret-key-stdin     # scripted, no shell history
-  revcat auth login --name prod --secret-key sk_xxx                   # scripted (key visible in history)
+  revcat auth login --name prod --secret-key sk_xxx                   # scripted (key in shell history)
   echo $RC_KEY | revcat auth login --name ci --secret-key-stdin \
-    --project-id proj_xxx --no-verify                                 # CI`,
+    --project-id proj_xxx --no-verify                                 # CI
+  revcat auth login --oauth --name my-app                             # OAuth in the browser
+  revcat auth login --oauth --client-id <id>                          # OAuth with explicit client_id`,
 	RunE: runLogin,
 }
 
@@ -47,12 +57,18 @@ func init() {
 	loginCmd.Flags().StringVarP(&loginSecretKey, "secret-key", "k", "", "RevenueCat v2 secret key (sk_...). Warning: visible in shell history; prefer --secret-key-stdin in production")
 	loginCmd.Flags().BoolVar(&loginSecretStdin, "secret-key-stdin", false, "Read the secret key from stdin (recommended for scripts/CI; avoids leaking the key into shell history)")
 	loginCmd.Flags().StringVar(&loginProjectID, "project-id", "", "Project id to bind (auto-detected from /v2/projects if omitted)")
-	loginCmd.Flags().BoolVar(&loginNoVerify, "no-verify", false, "Skip the API check that the key is valid")
+	loginCmd.Flags().BoolVar(&loginNoVerify, "no-verify", false, "Skip the API check that the credentials work")
+	loginCmd.Flags().BoolVar(&loginOAuth, "oauth", false, "Use the OAuth (PKCE) flow instead of a secret key")
+	loginCmd.Flags().StringVar(&loginClientID, "client-id", "", "OAuth client_id (defaults to REVCAT_OAUTH_CLIENT_ID env or the embedded public client)")
+	loginCmd.Flags().StringSliceVar(&loginScopes, "scope", nil, "OAuth scopes (default: revcat's full read/write set)")
 }
 
 func runLogin(cmd *cobra.Command, args []string) error {
 	if loginName == "" {
 		loginName = "default"
+	}
+	if loginOAuth {
+		return runOAuthLogin(cmd)
 	}
 	if loginSecretStdin && loginSecretKey != "" {
 		return fmt.Errorf("--secret-key and --secret-key-stdin are mutually exclusive; pass only one")
