@@ -1,6 +1,9 @@
 package api
 
-import "context"
+import (
+	"context"
+	"encoding/json"
+)
 
 // Project is the v2 representation of a RevenueCat project. Trimmed to the
 // fields revcat surfaces; extend as commands need more.
@@ -48,6 +51,36 @@ func (c *Client) GetProject(ctx context.Context, id string) (*Project, error) {
 	return nil, &APIError{Status: 404, StatusText: "Not Found", Message: "no project with id " + id + " accessible to this key"}
 }
 
+// GetProjectRaw fetches a project and returns the verbatim list-item bytes
+// alongside the typed projection. v2 has no per-id project endpoint, so
+// this iterates list pages and matches the wanted id - the raw bytes are
+// the matching item exactly as v2 returned it.
+func (c *Client) GetProjectRaw(ctx context.Context, id string) (*Project, json.RawMessage, error) {
+	path := "/projects?limit=100"
+	for {
+		var page struct {
+			Items []json.RawMessage `json:"items"`
+			Next  string            `json:"next_page,omitempty"`
+		}
+		if err := c.Do(ctx, "GET", path, nil, &page); err != nil {
+			return nil, nil, err
+		}
+		for _, raw := range page.Items {
+			var p Project
+			if err := json.Unmarshal(raw, &p); err != nil {
+				return nil, nil, err
+			}
+			if p.ID == id {
+				return &p, raw, nil
+			}
+		}
+		if page.Next == "" {
+			return nil, nil, &APIError{Status: 404, StatusText: "Not Found", Message: "no project with id " + id + " accessible to this key"}
+		}
+		path = "/projects?limit=100&starting_after=" + page.Next
+	}
+}
+
 // App is a per-platform app inside a project (one per bundle id / package).
 type App struct {
 	ID          string `json:"id"`
@@ -84,6 +117,19 @@ func (c *Client) GetApp(ctx context.Context, appID string) (*App, error) {
 		return nil, err
 	}
 	return &a, nil
+}
+
+// GetAppRaw fetches an app and returns the verbatim v2 response.
+func (c *Client) GetAppRaw(ctx context.Context, appID string) (*App, json.RawMessage, error) {
+	if err := c.requireProject(); err != nil {
+		return nil, nil, err
+	}
+	var a App
+	raw, err := c.DoRaw(ctx, "GET", c.projectPath("/apps/"+appID), nil, &a)
+	if err != nil {
+		return nil, nil, err
+	}
+	return &a, raw, nil
 }
 
 // ListPublicAPIKeys returns the SDK-side keys for an app.

@@ -68,7 +68,19 @@ var viewCmd = &cobra.Command{
 		}
 		ctx, cancel := context.WithTimeout(cmd.Context(), 30*time.Second)
 		defer cancel()
-		o, err := client.GetOffering(ctx, args[0], viewWithPackages || !output.IsJSON())
+		// JSON path: pass the v2 single-object response through verbatim
+		// so no v2 fields are silently dropped (issue #4). Users who
+		// want packages stitched in can pass --packages on the JSON path,
+		// which falls back to the typed render.
+		withPackages := viewWithPackagesSet(cmd)
+		if output.IsJSON() && !withPackages {
+			_, raw, err := client.GetOfferingRaw(ctx, args[0])
+			if err != nil {
+				return err
+			}
+			return output.JSON(raw)
+		}
+		o, err := client.GetOffering(ctx, args[0], withPackages || !output.IsJSON())
 		if err != nil {
 			return err
 		}
@@ -101,7 +113,22 @@ var viewCmd = &cobra.Command{
 }
 
 func init() {
-	viewCmd.Flags().BoolVar(&viewWithPackages, "packages", true, "Include packages in the rendered card")
+	viewCmd.Flags().BoolVar(&viewWithPackages, "packages", true, "Include packages in the rendered card (table mode). On --output json, pass --packages explicitly to opt into the stitched typed shape; default is the verbatim v2 response.")
+}
+
+// viewWithPackagesSet returns true if --packages was set explicitly OR if
+// we're rendering a TTY table (where the default of true applies). On JSON
+// output the default is treated as false so users get the verbatim v2
+// response unless they explicitly opt in.
+func viewWithPackagesSet(cmd *cobra.Command) bool {
+	f := cmd.Flag("packages")
+	if f != nil && f.Changed {
+		return viewWithPackages
+	}
+	if output.IsJSON() {
+		return false
+	}
+	return viewWithPackages
 }
 
 var (

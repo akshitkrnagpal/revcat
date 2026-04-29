@@ -64,12 +64,12 @@ var viewCmd = &cobra.Command{
 		}
 		ctx, cancel := context.WithTimeout(cmd.Context(), 30*time.Second)
 		defer cancel()
-		h, err := client.GetWebhook(ctx, args[0])
+		h, raw, err := client.GetWebhookRaw(ctx, args[0])
 		if err != nil {
 			return err
 		}
 		if output.IsJSON() {
-			return output.JSON(h)
+			return output.JSON(raw)
 		}
 		rows := [][]any{
 			{"id", h.ID},

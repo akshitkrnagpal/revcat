@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/url"
@@ -96,6 +97,21 @@ func (c *Client) GetCustomer(ctx context.Context, customerID string) (*Customer,
 	return &out, nil
 }
 
+// GetCustomerRaw fetches the customer record and returns the verbatim v2
+// response alongside the typed projection.
+func (c *Client) GetCustomerRaw(ctx context.Context, customerID string) (*Customer, json.RawMessage, error) {
+	if err := c.requireProject(); err != nil {
+		return nil, nil, err
+	}
+	var out Customer
+	path := c.projectPath("/customers/" + url.PathEscape(customerID))
+	raw, err := c.DoRaw(ctx, "GET", path, nil, &out)
+	if err != nil {
+		return nil, nil, err
+	}
+	return &out, raw, nil
+}
+
 // ListActiveEntitlements pages through a customer's active entitlements.
 func (c *Client) ListActiveEntitlements(ctx context.Context, customerID string) ([]ActiveEntitlement, error) {
 	return paginate[ActiveEntitlement](ctx, c, c.projectPath("/customers/"+url.PathEscape(customerID)+"/active_entitlements"))
@@ -120,13 +136,105 @@ func (c *Client) ListAliases(ctx context.Context, customerID string) ([]Alias, e
 // CustomerSnapshot is the assembled view rendered by `revcat subscribers info`.
 // Each field is filled by a parallel API call; partial failure is tolerated
 // so a missing endpoint doesn't blank the whole report.
+//
+// The Raw* fields hold the verbatim v2 bytes for each section so JSON
+// output can pass through every field RC returns rather than the curated
+// typed projection. They marshal under the same JSON keys as the typed
+// fields when present (via MarshalJSON) so consumers see one shape.
 type CustomerSnapshot struct {
-	Customer      *Customer            `json:"customer,omitempty"`
-	Entitlements  []ActiveEntitlement  `json:"active_entitlements,omitempty"`
-	Subscriptions []Subscription       `json:"subscriptions,omitempty"`
-	Purchases     []Purchase           `json:"purchases,omitempty"`
-	Aliases       []Alias              `json:"aliases,omitempty"`
+	Customer      *Customer            `json:"-"`
+	Entitlements  []ActiveEntitlement  `json:"-"`
+	Subscriptions []Subscription       `json:"-"`
+	Purchases     []Purchase           `json:"-"`
+	Aliases       []Alias              `json:"-"`
 	Errors        map[string]string    `json:"errors,omitempty"`
+
+	// Raw* hold the verbatim v2 bytes per section; populated on success.
+	RawCustomer      json.RawMessage   `json:"-"`
+	RawEntitlements  []json.RawMessage `json:"-"`
+	RawSubscriptions []json.RawMessage `json:"-"`
+	RawPurchases     []json.RawMessage `json:"-"`
+	RawAliases       []json.RawMessage `json:"-"`
+}
+
+// MarshalJSON renders the snapshot with the raw v2 field set when
+// available, falling back to the typed projection otherwise. This keeps
+// `revcat subscribers info --output json` field-complete relative to the
+// underlying v2 response (issue #4).
+func (s *CustomerSnapshot) MarshalJSON() ([]byte, error) {
+	type rawArr = []json.RawMessage
+	out := struct {
+		Customer      json.RawMessage `json:"customer,omitempty"`
+		Entitlements  rawArr          `json:"active_entitlements,omitempty"`
+		Subscriptions rawArr          `json:"subscriptions,omitempty"`
+		Purchases     rawArr          `json:"purchases,omitempty"`
+		Aliases       rawArr          `json:"aliases,omitempty"`
+		Errors        map[string]string `json:"errors,omitempty"`
+	}{Errors: s.Errors}
+
+	if s.RawCustomer != nil {
+		out.Customer = s.RawCustomer
+	} else if s.Customer != nil {
+		b, err := json.Marshal(s.Customer)
+		if err != nil {
+			return nil, err
+		}
+		out.Customer = b
+	}
+
+	if s.RawEntitlements != nil {
+		out.Entitlements = s.RawEntitlements
+	} else if s.Entitlements != nil {
+		out.Entitlements = make(rawArr, 0, len(s.Entitlements))
+		for i := range s.Entitlements {
+			b, err := json.Marshal(s.Entitlements[i])
+			if err != nil {
+				return nil, err
+			}
+			out.Entitlements = append(out.Entitlements, b)
+		}
+	}
+
+	if s.RawSubscriptions != nil {
+		out.Subscriptions = s.RawSubscriptions
+	} else if s.Subscriptions != nil {
+		out.Subscriptions = make(rawArr, 0, len(s.Subscriptions))
+		for i := range s.Subscriptions {
+			b, err := json.Marshal(s.Subscriptions[i])
+			if err != nil {
+				return nil, err
+			}
+			out.Subscriptions = append(out.Subscriptions, b)
+		}
+	}
+
+	if s.RawPurchases != nil {
+		out.Purchases = s.RawPurchases
+	} else if s.Purchases != nil {
+		out.Purchases = make(rawArr, 0, len(s.Purchases))
+		for i := range s.Purchases {
+			b, err := json.Marshal(s.Purchases[i])
+			if err != nil {
+				return nil, err
+			}
+			out.Purchases = append(out.Purchases, b)
+		}
+	}
+
+	if s.RawAliases != nil {
+		out.Aliases = s.RawAliases
+	} else if s.Aliases != nil {
+		out.Aliases = make(rawArr, 0, len(s.Aliases))
+		for i := range s.Aliases {
+			b, err := json.Marshal(s.Aliases[i])
+			if err != nil {
+				return nil, err
+			}
+			out.Aliases = append(out.Aliases, b)
+		}
+	}
+
+	return json.Marshal(out)
 }
 
 // SnapshotCustomer fans out the per-customer endpoints in parallel and
@@ -154,43 +262,48 @@ func (c *Client) SnapshotCustomer(ctx context.Context, customerID string) (*Cust
 	}
 
 	collect("customer", func() error {
-		v, err := c.GetCustomer(ctx, customerID)
+		v, raw, err := c.GetCustomerRaw(ctx, customerID)
 		if err != nil {
 			return err
 		}
 		snap.Customer = v
+		snap.RawCustomer = raw
 		return nil
 	})
 	collect("entitlements", func() error {
-		v, err := c.ListActiveEntitlements(ctx, customerID)
+		typed, raw, err := paginateBoth[ActiveEntitlement](ctx, c, c.projectPath("/customers/"+url.PathEscape(customerID)+"/active_entitlements"))
 		if err != nil {
 			return err
 		}
-		snap.Entitlements = v
+		snap.Entitlements = typed
+		snap.RawEntitlements = raw
 		return nil
 	})
 	collect("subscriptions", func() error {
-		v, err := c.ListSubscriptions(ctx, customerID)
+		typed, raw, err := paginateBoth[Subscription](ctx, c, c.projectPath("/customers/"+url.PathEscape(customerID)+"/subscriptions"))
 		if err != nil {
 			return err
 		}
-		snap.Subscriptions = v
+		snap.Subscriptions = typed
+		snap.RawSubscriptions = raw
 		return nil
 	})
 	collect("purchases", func() error {
-		v, err := c.ListPurchases(ctx, customerID)
+		typed, raw, err := paginateBoth[Purchase](ctx, c, c.projectPath("/customers/"+url.PathEscape(customerID)+"/purchases"))
 		if err != nil {
 			return err
 		}
-		snap.Purchases = v
+		snap.Purchases = typed
+		snap.RawPurchases = raw
 		return nil
 	})
 	collect("aliases", func() error {
-		v, err := c.ListAliases(ctx, customerID)
+		typed, raw, err := paginateBoth[Alias](ctx, c, c.projectPath("/customers/"+url.PathEscape(customerID)+"/aliases"))
 		if err != nil {
 			return err
 		}
-		snap.Aliases = v
+		snap.Aliases = typed
+		snap.RawAliases = raw
 		return nil
 	})
 
@@ -374,6 +487,35 @@ func paginate[T any](ctx context.Context, c *Client, basePath string) ([]T, erro
 		all = append(all, page.Items...)
 		if page.Next == "" {
 			return all, nil
+		}
+		path = basePath + "?limit=100&starting_after=" + page.Next
+	}
+}
+
+// paginateBoth is paginate with raw item bytes preserved. The typed slice
+// is for table/snapshot rendering, the raw slice keeps every v2 field.
+func paginateBoth[T any](ctx context.Context, c *Client, basePath string) ([]T, []json.RawMessage, error) {
+	typed := []T{}
+	rawAll := []json.RawMessage{}
+	path := basePath + "?limit=100"
+	for {
+		var page struct {
+			Items []json.RawMessage `json:"items"`
+			Next  string            `json:"next_page,omitempty"`
+		}
+		if err := c.Do(ctx, "GET", path, nil, &page); err != nil {
+			return nil, nil, err
+		}
+		for _, item := range page.Items {
+			var v T
+			if err := json.Unmarshal(item, &v); err != nil {
+				return nil, nil, fmt.Errorf("decode list item: %w", err)
+			}
+			typed = append(typed, v)
+			rawAll = append(rawAll, item)
+		}
+		if page.Next == "" {
+			return typed, rawAll, nil
 		}
 		path = basePath + "?limit=100&starting_after=" + page.Next
 	}

@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"encoding/json"
 	"net/url"
 )
 
@@ -36,6 +37,22 @@ func (c *Client) GetProduct(ctx context.Context, productID string) (*Product, er
 		return nil, err
 	}
 	return &p, nil
+}
+
+// GetProductRaw fetches one product by id and returns the response body
+// verbatim alongside the typed projection. The raw bytes let view commands
+// surface every v2 field in --output json without re-modeling the schema;
+// the typed struct stays around so the table renderer can pick its columns.
+func (c *Client) GetProductRaw(ctx context.Context, productID string) (*Product, json.RawMessage, error) {
+	if err := c.requireProject(); err != nil {
+		return nil, nil, err
+	}
+	var p Product
+	raw, err := c.DoRaw(ctx, "GET", c.projectPath("/products/"+url.PathEscape(productID)), nil, &p)
+	if err != nil {
+		return nil, nil, err
+	}
+	return &p, raw, nil
 }
 
 // CreateProduct creates a product. Body is a free-form map because the

@@ -70,12 +70,12 @@ var viewCmd = &cobra.Command{
 		}
 		ctx, cancel := context.WithTimeout(cmd.Context(), 30*time.Second)
 		defer cancel()
-		p, err := client.GetProject(ctx, id)
+		p, raw, err := client.GetProjectRaw(ctx, id)
 		if err != nil {
 			return err
 		}
 		if output.IsJSON() {
-			return output.JSON(p)
+			return output.JSON(raw)
 		}
 		rows := [][]any{
 			{"id", p.ID},

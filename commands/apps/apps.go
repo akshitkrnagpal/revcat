@@ -63,12 +63,12 @@ var viewCmd = &cobra.Command{
 		}
 		ctx, cancel := context.WithTimeout(cmd.Context(), 30*time.Second)
 		defer cancel()
-		a, err := client.GetApp(ctx, args[0])
+		a, raw, err := client.GetAppRaw(ctx, args[0])
 		if err != nil {
 			return err
 		}
 		if output.IsJSON() {
-			return output.JSON(a)
+			return output.JSON(raw)
 		}
 		bundleOrPkg := a.BundleID
 		bundleLabel := "bundle_id"

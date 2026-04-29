@@ -37,12 +37,12 @@ var viewCmd = &cobra.Command{
 		}
 		ctx, cancel := context.WithTimeout(cmd.Context(), 30*time.Second)
 		defer cancel()
-		s, err := client.GetSubscription(ctx, args[0])
+		s, raw, err := client.GetSubscriptionRaw(ctx, args[0])
 		if err != nil {
 			return err
 		}
 		if output.IsJSON() {
-			return output.JSON(s)
+			return output.JSON(raw)
 		}
 		rows := [][]any{
 			{"id", s.ID},

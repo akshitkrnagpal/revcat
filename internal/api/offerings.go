@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"encoding/json"
 	"net/url"
 )
 
@@ -85,6 +86,27 @@ func (c *Client) GetOffering(ctx context.Context, idOrKey string, withPackages b
 		out.Packages = pkgs
 	}
 	return &out, nil
+}
+
+// GetOfferingRaw fetches an offering and returns the v2 response verbatim
+// alongside the typed projection. withPackages is intentionally omitted
+// here - the raw response is the v2 single-object body, no client-side
+// stitching applied.
+func (c *Client) GetOfferingRaw(ctx context.Context, idOrKey string) (*Offering, json.RawMessage, error) {
+	if err := c.requireProject(); err != nil {
+		return nil, nil, err
+	}
+	id, err := c.ResolveOfferingID(ctx, idOrKey)
+	if err != nil {
+		return nil, nil, err
+	}
+	var out Offering
+	path := c.projectPath("/offerings/" + url.PathEscape(id))
+	raw, err := c.DoRaw(ctx, "GET", path, nil, &out)
+	if err != nil {
+		return nil, nil, err
+	}
+	return &out, raw, nil
 }
 
 // ListPackages pages through the packages in an offering. Accepts either
@@ -219,6 +241,19 @@ func (c *Client) GetPackage(ctx context.Context, packageID string) (*Package, er
 		return nil, err
 	}
 	return &p, nil
+}
+
+// GetPackageRaw fetches a package and returns the verbatim v2 response.
+func (c *Client) GetPackageRaw(ctx context.Context, packageID string) (*Package, json.RawMessage, error) {
+	if err := c.requireProject(); err != nil {
+		return nil, nil, err
+	}
+	var p Package
+	raw, err := c.DoRaw(ctx, "GET", c.projectPath("/packages/"+url.PathEscape(packageID)), nil, &p)
+	if err != nil {
+		return nil, nil, err
+	}
+	return &p, raw, nil
 }
 
 // CreatePackage creates a package under an offering. The v2 endpoint is
