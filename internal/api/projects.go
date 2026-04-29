@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"net/url"
 )
 
 // Project is the v2 representation of a RevenueCat project. Trimmed to the
@@ -113,7 +114,7 @@ func (c *Client) GetApp(ctx context.Context, appID string) (*App, error) {
 		return nil, err
 	}
 	var a App
-	if err := c.Do(ctx, "GET", c.projectPath("/apps/"+appID), nil, &a); err != nil {
+	if err := c.Do(ctx, "GET", c.projectPath("/apps/"+url.PathEscape(appID)), nil, &a); err != nil {
 		return nil, err
 	}
 	return &a, nil
@@ -125,7 +126,7 @@ func (c *Client) GetAppRaw(ctx context.Context, appID string) (*App, json.RawMes
 		return nil, nil, err
 	}
 	var a App
-	raw, err := c.DoRaw(ctx, "GET", c.projectPath("/apps/"+appID), nil, &a)
+	raw, err := c.DoRaw(ctx, "GET", c.projectPath("/apps/"+url.PathEscape(appID)), nil, &a)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -137,7 +138,7 @@ func (c *Client) ListPublicAPIKeys(ctx context.Context, appID string) ([]PublicA
 	if err := c.requireProject(); err != nil {
 		return nil, err
 	}
-	return paginate[PublicAPIKey](ctx, c, c.projectPath("/apps/"+appID+"/public_api_keys"))
+	return paginate[PublicAPIKey](ctx, c, c.projectPath("/apps/"+url.PathEscape(appID)+"/public_api_keys"))
 }
 
 // GetStoreKitConfig returns the StoreKit configuration for an app (iOS).
@@ -147,7 +148,7 @@ func (c *Client) GetStoreKitConfig(ctx context.Context, appID string) (map[strin
 		return nil, err
 	}
 	var out map[string]any
-	if err := c.Do(ctx, "GET", c.projectPath("/apps/"+appID+"/store_kit_config"), nil, &out); err != nil {
+	if err := c.Do(ctx, "GET", c.projectPath("/apps/"+url.PathEscape(appID)+"/store_kit_config"), nil, &out); err != nil {
 		return nil, err
 	}
 	return out, nil
