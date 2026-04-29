@@ -1,6 +1,6 @@
 ---
 name: revcat-troubleshooting
-description: Use when a revcat command fails or shows an error. Common errors: 401 unauthorized, no profile, no project_id, 404 customer/subscription, partner-tier endpoints, paywall PUT failures, ndjson parsing. Triggers on revcat error output, "revcat doesn't work".
+description: Use when a revcat command fails or shows an error. Common errors: 401 unauthorized, no profile, no project_id, 404 customer/subscription, partner-tier endpoints, paywall PUT failures, ndjson parsing, Test Store quirks, v1-only endpoints, dashboard-only operations. Triggers on revcat error output, "revcat doesn't work", "command not supported", "atob error", "endpoint missing".
 ---
 
 # revcat - troubleshooting
@@ -74,8 +74,36 @@ revcat caps JSON file input at 4 MB to defend against accidental binary blobs. I
 
 `--no-color` (or `NO_COLOR=1`) helps in terminals that don't speak ANSI. For dumb pipes, force JSON: `--output json`.
 
+## Test Store quirks ("my offering returns 0 packages on the SDK")
+
+The Test Store is RC's sandbox-style storefront for development. It has two gotchas:
+
+1. **Prices are dashboard-only.** v2 has no endpoint for setting prices on Test Store products. revcat cannot help here — set the price in the RC dashboard UI under each product.
+2. **A product without a price is invisible to the SDK.** `/v1/subscribers/{user_id}/offerings` returns `packages: []` for offerings whose products have no Test Store price. The dashboard will show the product attached to the package; the SDK will still see nothing.
+
+If the user is debugging this end-to-end, route to `revcat-storefront-debug` — that skill walks the full diagnostic flow.
+
+## v1-only endpoints (revcat does not wrap these)
+
+revcat tracks v2. The v1 surface is intentionally out of scope. The few v1 endpoints that come up in real debugging:
+
+- `GET /v1/subscribers/{user_id}/offerings` - what the SDK actually receives. Use this to diff "what the dashboard shows" vs "what `Purchases.getOfferings()` returns." See `revcat-storefront-debug` for the curl pattern.
+- `POST /v1/subscribers/{user_id}/receipts` - validate a store receipt. Used by SDKs internally; not a debugging endpoint.
+
+When you fall back to curl for v1, use the **public SDK key** (one of the per-platform public keys), not the v2 secret key. Pull it via `revcat apps public-keys <app_id>`.
+
+## Dashboard-only operations
+
+A small set of operations have no v2 endpoint at all — revcat cannot wrap what doesn't exist. Known cases as of revcat's current shipped version:
+
+- Test Store product prices (covered above)
+- StoreKit configuration generation for local Xcode testing (export from dashboard manually)
+- Webhook signing-secret rotation (rotate via dashboard, then re-fetch with `revcat webhooks view`)
+
+If the user reaches for the dashboard for one of these, that's expected. If they reach for the dashboard for anything else and a v2 endpoint exists for it, that's a revcat coverage gap worth filing.
+
 ## Where revcat does NOT work
 
 - Project create, app CRUD, collaborators - need a partner-tier API key.
 - An events firehose - RC delivers lifecycle events via webhooks (`revcat webhooks`), not a REST stream.
-- Anything not in `revcat <group> --help` - revcat tracks v2; v1-only endpoints are not wrapped.
+- Anything not in `revcat <group> --help` - revcat tracks v2; v1-only endpoints are not wrapped (see above for the curl fallback).

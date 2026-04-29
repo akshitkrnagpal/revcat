@@ -1,6 +1,6 @@
 ---
 name: revcat-commands
-description: Use when constructing a revcat command. Reference for every subcommand with real syntax and examples for entitlements, offerings, products, paywalls, subscribers, subscriptions, webhooks, metrics, charts, audit-logs. Triggers on "revcat <command>", "how do I X with revcat".
+description: Use when constructing or verifying a revcat command, or when looking up which commands exist for a given resource. Reference for every subcommand with real syntax and examples for entitlements, offerings, packages, products, paywalls, subscribers, subscriptions, webhooks, metrics, charts, audit-logs, virtual-currencies, apps. Triggers on "revcat <command>", "how do I X with revcat", "which revcat command", "is there a revcat for", "what flags does revcat <subcommand> take", "list / view / create / delete / update with revcat".
 ---
 
 # revcat - command reference
@@ -12,6 +12,7 @@ Conventions:
 - `<id>` = literal id RC returns. Often a lookup_key like `premium`, sometimes an internal id like `pkg_xxx`.
 - `--file <path>` = JSON body on disk (or `-` for stdin). Used wherever the v2 schema is broad.
 - `-y / --confirm` = skip the destructive-action prompt.
+- **Flags are scoped to the subcommand.** Don't assume a flag that works on one subcommand works on another. `revcat packages list` takes `--offering`, NOT `--app-id`. `revcat products list` has no per-app filter at all (filter by `app_id` in the JSON output instead). Always check `--help` on the exact subcommand if a guess doesn't take.
 
 ## auth
 
