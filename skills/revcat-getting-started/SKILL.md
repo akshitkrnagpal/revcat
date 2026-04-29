@@ -25,10 +25,15 @@ Pre-built binaries for every platform are on the [GitHub Releases page](https://
 
 revcat reads a v2 secret key (`sk_...`) and stores it in the OS keychain.
 
+Pipe the key in via stdin so it does not land in your shell history:
+
 ```sh
-revcat auth login --name my-app --secret-key sk_xxx
+echo $RC_KEY | revcat auth login --name my-app --secret-key-stdin
 revcat auth doctor             # verify
 ```
+
+`--secret-key sk_...` works too, but the key is visible in shell history and
+process listings. Prefer `--secret-key-stdin` for production and CI.
 
 For CI / Docker (no keychain), use one of:
 
@@ -37,7 +42,7 @@ For CI / Docker (no keychain), use one of:
 REVCAT_API_KEY=sk_xxx revcat metrics overview
 
 # B: write a profile to ./.revcat/config.json (auto-gitignored)
-revcat auth login --bypass-keychain --name ci --secret-key sk_xxx --no-verify
+echo $RC_KEY | revcat auth login --bypass-keychain --name ci --secret-key-stdin --no-verify
 ```
 
 Switch profiles with `revcat auth use <name>` or `--profile <name>` per-command.

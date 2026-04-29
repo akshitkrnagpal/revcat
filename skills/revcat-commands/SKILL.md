@@ -17,7 +17,12 @@ Conventions:
 ## auth
 
 ```sh
+# Recommended: pipe the key in via stdin so it never lands in shell history.
+echo $RC_KEY | revcat auth login --name my-app --secret-key-stdin [--project-id proj_xxx] [--no-verify]
+
+# Inline (key visible in shell history; OK for local exploration, avoid in production/CI):
 revcat auth login --name my-app --secret-key sk_xxx [--project-id proj_xxx] [--no-verify]
+
 revcat auth status [--validate]
 revcat auth doctor
 revcat auth use <name>

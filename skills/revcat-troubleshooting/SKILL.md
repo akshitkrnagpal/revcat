@@ -20,14 +20,14 @@ Logs the full request and response (with the secret key redacted).
 The login step or any later command got 401.
 
 - Confirm you're using a **v2 secret key** (starts with `sk_`), not a public SDK key.
-- The key may have been rotated. Generate a new one in the dashboard and re-run `revcat auth login --name <name> --secret-key sk_xxx`.
+- The key may have been rotated. Generate a new one in the dashboard and re-run `echo $RC_KEY | revcat auth login --name <name> --secret-key-stdin` (or `--secret-key sk_xxx` if you don't mind the key in shell history).
 - If you're hitting a partner-tier endpoint (project create, app CRUD, audit logs, collaborators) with a project secret key, you'll see 401/403. Those are out of scope for revcat.
 
 ## "no profile found - run `revcat auth login`"
 
 There is no active profile to use.
 
-- First time: `revcat auth login --name my-app --secret-key sk_xxx`.
+- First time: `echo $RC_KEY | revcat auth login --name my-app --secret-key-stdin` (recommended, no shell-history leak), or `revcat auth login --name my-app --secret-key sk_xxx`.
 - Already logged in elsewhere? Check what's set: `revcat auth list`.
 - Switch with `revcat auth use <name>` or per-command `--profile <name>`.
 - In CI: pass `REVCAT_API_KEY=sk_xxx` directly, or use `--bypass-keychain` so revcat reads `./.revcat/config.json`.

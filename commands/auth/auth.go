@@ -12,8 +12,11 @@ credentials is a "profile" with a name, secret key, and project id.
 
 Most users only need:
 
-    revcat auth login --name my-app --secret-key sk_...
+    echo $RC_KEY | revcat auth login --name my-app --secret-key-stdin
     revcat auth status
+
+--secret-key sk_... works too, but the key ends up in your shell history.
+Prefer --secret-key-stdin for production and CI.
 
 For CI, pass --bypass-keychain (or set REVCAT_BYPASS_KEYCHAIN=1) to use a
 local file instead, or pass REVCAT_API_KEY directly.`,

@@ -10,7 +10,7 @@ The RevenueCat CLI. Run your RevenueCat project from the terminal instead of cli
 ![revcat demo](./demo/demo.gif)
 
 ```sh
-revcat auth login --name my-app --secret-key sk_xxx
+echo $RC_KEY | revcat auth login --name my-app --secret-key-stdin
 revcat subscribers info app_user_123
 revcat metrics overview
 revcat publish offering pro --paywall ./paywalls/pro.json
@@ -45,12 +45,23 @@ revcat reads a RevenueCat v2 secret key (`sk_...`). One of:
 
 Profiles live in your OS keychain by default. For containers/CI, pass `--bypass-keychain` (or `REVCAT_BYPASS_KEYCHAIN=1`) and the profile is written to `./.revcat/config.json` instead. A `.gitignore` is created on first write.
 
+Recommended: pipe the key in via stdin so it never lands in your shell history.
+
 ```sh
-revcat auth login --name my-app --secret-key sk_xxx
+echo $RC_KEY | revcat auth login --name my-app --secret-key-stdin
 revcat auth status --validate
 revcat auth doctor                   # diagnose common breakage
 revcat auth list
 revcat auth use my-app
+```
+
+`--secret-key sk_...` works too, but the key is then visible in your shell
+history and any process listing. Prefer `--secret-key-stdin` for production
+and CI.
+
+```sh
+# Secondary form (key visible in history; convenient for local exploration):
+revcat auth login --name my-app --secret-key sk_xxx
 ```
 
 ## Command surface

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"strings"
 	"time"
 
@@ -16,10 +17,11 @@ import (
 )
 
 var (
-	loginName      string
-	loginSecretKey string
-	loginProjectID string
-	loginNoVerify  bool
+	loginName        string
+	loginSecretKey   string
+	loginSecretStdin bool
+	loginProjectID   string
+	loginNoVerify    bool
 )
 
 var loginCmd = &cobra.Command{
@@ -32,16 +34,18 @@ written to your OS keychain unless --bypass-keychain is set, in which case
 it's written to ./.revcat/config.json (a .gitignore is created on first use).
 
 Examples:
-  revcat auth login                                       # interactive
-  revcat auth login --name prod --secret-key sk_xxx       # scripted
-  revcat auth login --name prod --secret-key sk_xxx \
-    --project-id proj_xxx --no-verify                     # CI`,
+  revcat auth login                                                   # interactive
+  echo $RC_KEY | revcat auth login --name prod --secret-key-stdin     # scripted, no shell history
+  revcat auth login --name prod --secret-key sk_xxx                   # scripted (key visible in history)
+  echo $RC_KEY | revcat auth login --name ci --secret-key-stdin \
+    --project-id proj_xxx --no-verify                                 # CI`,
 	RunE: runLogin,
 }
 
 func init() {
 	loginCmd.Flags().StringVarP(&loginName, "name", "n", "", "Profile name (default: 'default')")
-	loginCmd.Flags().StringVarP(&loginSecretKey, "secret-key", "k", "", "RevenueCat v2 secret key (sk_...)")
+	loginCmd.Flags().StringVarP(&loginSecretKey, "secret-key", "k", "", "RevenueCat v2 secret key (sk_...). Warning: visible in shell history; prefer --secret-key-stdin in production")
+	loginCmd.Flags().BoolVar(&loginSecretStdin, "secret-key-stdin", false, "Read the secret key from stdin (recommended for scripts/CI; avoids leaking the key into shell history)")
 	loginCmd.Flags().StringVar(&loginProjectID, "project-id", "", "Project id to bind (auto-detected from /v2/projects if omitted)")
 	loginCmd.Flags().BoolVar(&loginNoVerify, "no-verify", false, "Skip the API check that the key is valid")
 }
@@ -49,6 +53,19 @@ func init() {
 func runLogin(cmd *cobra.Command, args []string) error {
 	if loginName == "" {
 		loginName = "default"
+	}
+	if loginSecretStdin && loginSecretKey != "" {
+		return fmt.Errorf("--secret-key and --secret-key-stdin are mutually exclusive; pass only one")
+	}
+	if loginSecretStdin {
+		raw, err := io.ReadAll(cmd.InOrStdin())
+		if err != nil {
+			return fmt.Errorf("read secret key from stdin: %w", err)
+		}
+		loginSecretKey = strings.TrimSpace(string(raw))
+		if loginSecretKey == "" {
+			return fmt.Errorf("--secret-key-stdin was set but stdin was empty")
+		}
 	}
 	if loginSecretKey == "" {
 		if err := survey.AskOne(&survey.Password{Message: "RevenueCat secret key (sk_...)"}, &loginSecretKey); err != nil {
