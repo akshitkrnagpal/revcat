@@ -255,9 +255,12 @@ var productsCmd = &cobra.Command{
 		}
 		ctx, cancel := context.WithTimeout(cmd.Context(), 30*time.Second)
 		defer cancel()
-		prods, err := client.ListEntitlementProducts(ctx, args[0])
+		prods, raw, err := client.ListEntitlementProductsRaw(ctx, args[0])
 		if err != nil {
 			return err
+		}
+		if output.IsJSON() {
+			return output.JSON(raw)
 		}
 		rows := make([][]any, 0, len(prods))
 		for _, p := range prods {

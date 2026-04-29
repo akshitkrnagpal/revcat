@@ -142,6 +142,8 @@ func (c *Client) ArchiveEntitlement(ctx context.Context, idOrKey string, archive
 }
 
 // ListEntitlementProducts lists products attached to an entitlement.
+// v2's `GET /entitlements/{id}/products` returns bare Product items
+// (unlike packages, which wrap them in a binding object).
 func (c *Client) ListEntitlementProducts(ctx context.Context, idOrKey string) ([]Product, error) {
 	if err := c.requireProject(); err != nil {
 		return nil, err
@@ -151,6 +153,20 @@ func (c *Client) ListEntitlementProducts(ctx context.Context, idOrKey string) ([
 		return nil, err
 	}
 	return paginate[Product](ctx, c, c.projectPath("/entitlements/"+url.PathEscape(id)+"/products"))
+}
+
+// ListEntitlementProductsRaw is ListEntitlementProducts plus the
+// verbatim per-item bytes for --output json so the full v2 product
+// shape (app_id, store_identifier, subscription, etc.) reaches users.
+func (c *Client) ListEntitlementProductsRaw(ctx context.Context, idOrKey string) ([]Product, []json.RawMessage, error) {
+	if err := c.requireProject(); err != nil {
+		return nil, nil, err
+	}
+	id, err := c.ResolveEntitlementID(ctx, idOrKey)
+	if err != nil {
+		return nil, nil, err
+	}
+	return paginateBoth[Product](ctx, c, c.projectPath("/entitlements/"+url.PathEscape(id)+"/products"))
 }
 
 // AttachProductsToEntitlement adds products that grant this entitlement.

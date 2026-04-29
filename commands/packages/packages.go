@@ -244,18 +244,16 @@ func init() {
 	deleteCmd.Flags().BoolVarP(&deleteConfirm, "confirm", "y", false, "Skip the prompt")
 }
 
-var productsNoEnrich bool
-
 var productsCmd = &cobra.Command{
 	Use:   "products <id>",
 	Short: "List products attached to a package",
 	Long: `List products attached to a package.
 
-The v2 ` + "`GET /packages/{id}/products`" + ` endpoint returns binding
-metadata only - display_name is not part of the join. By default revcat
-follows up with a per-product GET to fill in display_name (cached so each
-product is only fetched once per call). Pass --no-enrich to skip that and
-return the lean v2 response verbatim.`,
+The v2 ` + "`GET /packages/{id}/products`" + ` endpoint returns each
+attachment as a binding object: ` + "`{eligibility_criteria, product:{...}}`" + `.
+The full nested product (display_name, app_id, store_identifier, etc.)
+arrives in the same response. ` + "`--output json`" + ` returns the raw v2
+items verbatim; the table view flattens them.`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		client, _, err := cliutil.Client(cmd)
@@ -264,87 +262,29 @@ return the lean v2 response verbatim.`,
 		}
 		ctx, cancel := context.WithTimeout(cmd.Context(), 30*time.Second)
 		defer cancel()
-		prods, err := client.ListPackageProducts(ctx, args[0])
+		bindings, raw, err := client.ListPackageProductsRaw(ctx, args[0])
 		if err != nil {
 			return err
 		}
-		if !productsNoEnrich {
-			prods, err = enrichProducts(ctx, client.GetProduct, prods)
-			if err != nil {
-				return err
-			}
-		}
 		if output.IsJSON() {
-			return output.JSON(prods)
+			return output.JSON(raw)
 		}
-		rows := make([][]any, 0, len(prods))
-		for _, p := range prods {
-			rows = append(rows, []any{p.ID, p.StoreIdentifier, p.Type, p.DisplayName})
-		}
-		return output.Table([]string{"id", "store_id", "type", "display_name"}, rows)
-	},
-}
-
-// productGetter matches the *api.Client.GetProduct signature so the
-// enrichment helper is testable without a real HTTP client.
-type productGetter func(ctx context.Context, productID string) (*api.Product, error)
-
-// enrichProducts fills in fields the v2 package-products endpoint omits
-// (notably display_name) by calling GetProduct for each product whose
-// display_name is empty. Results are cached per product id so the same
-// product attached to multiple eligibility rows is only fetched once.
-//
-// On a fetch error the partially-filled slice is returned along with the
-// error so callers can choose to continue. Callers that prefer raw v2
-// output should skip enrichment entirely.
-func enrichProducts(ctx context.Context, get productGetter, prods []api.Product) ([]api.Product, error) {
-	cache := make(map[string]*api.Product, len(prods))
-	out := make([]api.Product, len(prods))
-	copy(out, prods)
-	for i := range out {
-		if out[i].DisplayName != "" || out[i].ID == "" {
-			continue
-		}
-		full, ok := cache[out[i].ID]
-		if !ok {
-			fetched, err := get(ctx, out[i].ID)
-			if err != nil {
-				return out, err
+		rows := make([][]any, 0, len(bindings))
+		for _, b := range bindings {
+			eligibility := b.EligibilityCriteria
+			if eligibility == "" {
+				eligibility = "-"
 			}
-			full = fetched
-			cache[out[i].ID] = full
+			rows = append(rows, []any{
+				b.Product.ID,
+				b.Product.StoreIdentifier,
+				b.Product.Type,
+				b.Product.DisplayName,
+				eligibility,
+			})
 		}
-		mergeProduct(&out[i], full)
-	}
-	return out, nil
-}
-
-// mergeProduct copies fields from src onto dst when dst's value is the
-// zero value for that field. This preserves any binding-specific fields
-// the package-products endpoint may have set while filling in the gaps.
-func mergeProduct(dst, src *api.Product) {
-	if src == nil {
-		return
-	}
-	if dst.DisplayName == "" {
-		dst.DisplayName = src.DisplayName
-	}
-	if dst.StoreIdentifier == "" {
-		dst.StoreIdentifier = src.StoreIdentifier
-	}
-	if dst.Type == "" {
-		dst.Type = src.Type
-	}
-	if dst.AppID == "" {
-		dst.AppID = src.AppID
-	}
-	if dst.CreatedAt == 0 {
-		dst.CreatedAt = src.CreatedAt
-	}
-}
-
-func init() {
-	productsCmd.Flags().BoolVar(&productsNoEnrich, "no-enrich", false, "Skip per-product GETs that fill in display_name; return the lean v2 response")
+		return output.Table([]string{"id", "store_id", "type", "display_name", "eligibility"}, rows)
+	},
 }
 
 var attachEligibility string
