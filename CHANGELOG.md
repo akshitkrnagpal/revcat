@@ -2,6 +2,27 @@
 
 Notable changes per release. Dates are UTC.
 
+## [v0.3.0](https://github.com/akshitkrnagpal/revcat/releases/tag/v0.3.0) - 2026-04-29
+
+Security audit pass. Five findings ranging from a transitive CVE down to inconsistent URL escaping, all addressed before the OAuth public-client work lands. `govulncheck ./...` now reports clean.
+
+### Added
+
+- `revcat auth login --secret-key-stdin` reads the v2 secret key from stdin instead of a flag value. The previous `--secret-key sk_xxx` form leaks the key into shell history; documentation now leads with the stdin pattern. The flag-value form still works but the help text flags the risk.
+
+### Fixed
+
+- **Security** — `github.com/dvsekhvalnov/jose2go` pinned to v1.7.0 via a `go.mod` replace directive, closing two known DoS CVEs (GO-2025-4123, GO-2023-2409) that reached the keychain backend transitively via `99designs/keyring`. `govulncheck ./...` reports `No vulnerabilities found.`
+- **Security** — `internal/api/projects.go` now URL-escapes `appID` consistently with the rest of `internal/api/`. The other resource files were already escaping correctly; projects.go was the lone holdout.
+- `internal/auth/local.go` writes to `~/.revcat/config.json` are now atomic (tempfile + chmod 0600 + sync + rename). Ctrl-C, kernel panic, or two concurrent revcat invocations can no longer leave the config in a partially-written state. Same fix applied to `internal/auth/active.go` `SetActive`.
+- `--file <path>` now enforces the same 4 MiB cap as stdin. Previously revcat would happily try to read a multi-GB file into memory. The paywall loader (`commands/publish/offering.loadPaywall`) inherits the same cap. Error message: `"input too large: file is N bytes, max is 4 MiB. Pipe via stdin if you really need more."`
+
+### Internal
+
+- New `cliutil.MaxJSONSize` constant + `cliutil.ReadCappedFile` helper used by both stdin and file-path branches.
+- New `internal/auth/atomic.go` with layered helpers (`atomicWriteJSON` → `atomicWriteFile` → `atomicWriteWith`); the lowest takes a `func(io.Writer) error` so tests can inject mid-write failures.
+- Added regression tests across all five fixes including a concurrent-writes test for the atomic config helper and an at-the-cap-boundary test for the file size limit.
+
 ## [v0.2.0](https://github.com/akshitkrnagpal/revcat/releases/tag/v0.2.0) - 2026-04-29
 
 Diagnostic + JSON-completeness pass driven by a real-world session where the SDK was seeing 0 packages from a Test Store offering. Adds the missing piece for that workflow, fixes two latent unmarshaling bugs, and stops `--output json` from silently dropping fields the v2 API returns.
