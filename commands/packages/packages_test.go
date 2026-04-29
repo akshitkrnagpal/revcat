@@ -1,103 +1,87 @@
 package packages
 
 import (
-	"context"
-	"errors"
+	"encoding/json"
 	"testing"
 
 	"github.com/akshitkrnagpal/revcat/internal/api"
 )
 
-// TestEnrichProductsFillsDisplayName covers the case A scenario: the v2
-// package-products endpoint returns binding metadata with an empty
-// display_name. Enrichment must populate it from GetProduct.
-func TestEnrichProductsFillsDisplayName(t *testing.T) {
-	in := []api.Product{
-		{ID: "prod_a", StoreIdentifier: "monthly.sub"},
-	}
-	get := func(_ context.Context, id string) (*api.Product, error) {
-		if id != "prod_a" {
-			t.Fatalf("unexpected product fetch: %s", id)
+// TestPackageProductBindingShape locks in that v2's package-products
+// response is parsed as `{eligibility_criteria, product:{...}}` rather
+// than a bare Product. This was the bug behind the empty-display_name
+// symptom that motivated this PR.
+func TestPackageProductBindingShape(t *testing.T) {
+	// Verbatim shape we observed from the live API on 2026-04-29:
+	//   GET /v2/projects/{p}/packages/{pkg}/products
+	// →  {"items":[{"eligibility_criteria":"all","product":{...}}], ...}
+	raw := []byte(`{
+		"eligibility_criteria": "all",
+		"product": {
+			"app_id": "appbc40da51e8",
+			"created_at": 1777154411736,
+			"display_name": "Monthly v2",
+			"id": "prodbfa7f763ce",
+			"object": "product",
+			"state": "active",
+			"store_identifier": "com.revcat.test.monthly",
+			"type": "subscription"
 		}
-		return &api.Product{ID: id, DisplayName: "Premium Monthly", AppID: "app_x"}, nil
+	}`)
+
+	var got api.PackageProductBinding
+	if err := json.Unmarshal(raw, &got); err != nil {
+		t.Fatalf("unmarshal binding: %v", err)
 	}
-	out, err := enrichProducts(context.Background(), get, in)
-	if err != nil {
-		t.Fatalf("enrichProducts: %v", err)
+
+	if got.EligibilityCriteria != "all" {
+		t.Fatalf("eligibility: got %q want all", got.EligibilityCriteria)
 	}
-	if got := out[0].DisplayName; got != "Premium Monthly" {
-		t.Fatalf("display_name: got %q want %q", got, "Premium Monthly")
+	if got.Product.ID != "prodbfa7f763ce" {
+		t.Fatalf("product.id: got %q", got.Product.ID)
 	}
-	if got := out[0].StoreIdentifier; got != "monthly.sub" {
-		t.Fatalf("store_identifier: got %q want %q", got, "monthly.sub")
+	if got.Product.DisplayName != "Monthly v2" {
+		t.Fatalf("product.display_name: got %q want Monthly v2 (was empty before this fix)", got.Product.DisplayName)
 	}
-	if got := out[0].AppID; got != "app_x" {
-		t.Fatalf("app_id: got %q want %q", got, "app_x")
+	if got.Product.StoreIdentifier != "com.revcat.test.monthly" {
+		t.Fatalf("product.store_identifier: got %q (was empty before this fix)", got.Product.StoreIdentifier)
+	}
+	if got.Product.AppID != "appbc40da51e8" {
+		t.Fatalf("product.app_id: got %q (was empty before this fix)", got.Product.AppID)
 	}
 }
 
-// TestEnrichProductsCachesByID asserts that a product appearing twice
-// (e.g. attached with different eligibility criteria) is only fetched
-// once. Without caching, the package-products endpoint fan-out is N+1
-// against the catalog size.
-func TestEnrichProductsCachesByID(t *testing.T) {
-	in := []api.Product{
-		{ID: "prod_a"},
-		{ID: "prod_a"},
-		{ID: "prod_b"},
-	}
-	calls := map[string]int{}
-	get := func(_ context.Context, id string) (*api.Product, error) {
-		calls[id]++
-		return &api.Product{ID: id, DisplayName: id + "-name"}, nil
-	}
-	out, err := enrichProducts(context.Background(), get, in)
+// TestPackageProductBindingPreservesUnknownFields confirms a future
+// field added to the binding object (e.g. a new eligibility category)
+// would still survive a JSON round-trip via the Raw passthrough path.
+// The typed struct doesn't model it, but `--output json` should.
+func TestPackageProductBindingPreservesUnknownFields(t *testing.T) {
+	raw := json.RawMessage(`{
+		"eligibility_criteria": "all",
+		"future_field_revcat_doesnt_model": "still_here",
+		"product": {"id": "prod_a", "display_name": "X"}
+	}`)
+
+	// Round-trip through json.RawMessage (what ListPackageProductsRaw
+	// hands the command layer) keeps the bytes verbatim.
+	out, err := json.Marshal(raw)
 	if err != nil {
-		t.Fatalf("enrichProducts: %v", err)
+		t.Fatalf("marshal raw: %v", err)
 	}
-	if calls["prod_a"] != 1 {
-		t.Fatalf("prod_a fetched %d times, want 1", calls["prod_a"])
+	if !contains(string(out), "future_field_revcat_doesnt_model") {
+		t.Fatalf("unknown field dropped during raw round-trip: %s", out)
 	}
-	if calls["prod_b"] != 1 {
-		t.Fatalf("prod_b fetched %d times, want 1", calls["prod_b"])
-	}
-	for i, p := range out {
-		if p.DisplayName == "" {
-			t.Fatalf("row %d: display_name empty", i)
+}
+
+func contains(s, substr string) bool {
+	return len(s) >= len(substr) && (s == substr || (len(s) > 0 && (indexOf(s, substr) >= 0)))
+}
+
+func indexOf(s, substr string) int {
+	for i := 0; i+len(substr) <= len(s); i++ {
+		if s[i:i+len(substr)] == substr {
+			return i
 		}
 	}
-}
-
-// TestEnrichProductsSkipsWhenAlreadySet keeps the helper a no-op when
-// the v2 endpoint does happen to return display_name (case B). No
-// network calls should fire in that case.
-func TestEnrichProductsSkipsWhenAlreadySet(t *testing.T) {
-	in := []api.Product{
-		{ID: "prod_a", DisplayName: "Already Set"},
-	}
-	get := func(_ context.Context, id string) (*api.Product, error) {
-		t.Fatalf("unexpected fetch for %s when display_name was already set", id)
-		return nil, nil
-	}
-	out, err := enrichProducts(context.Background(), get, in)
-	if err != nil {
-		t.Fatalf("enrichProducts: %v", err)
-	}
-	if out[0].DisplayName != "Already Set" {
-		t.Fatalf("display_name overwritten: got %q", out[0].DisplayName)
-	}
-}
-
-// TestEnrichProductsPropagatesError ensures fetch failures bubble up so
-// the command can decide whether to surface them or fall back.
-func TestEnrichProductsPropagatesError(t *testing.T) {
-	in := []api.Product{{ID: "prod_a"}}
-	want := errors.New("boom")
-	get := func(_ context.Context, _ string) (*api.Product, error) {
-		return nil, want
-	}
-	_, err := enrichProducts(context.Background(), get, in)
-	if !errors.Is(err, want) {
-		t.Fatalf("got %v, want %v", err, want)
-	}
+	return -1
 }

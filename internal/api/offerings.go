@@ -297,12 +297,36 @@ func (c *Client) DeletePackage(ctx context.Context, packageID string) error {
 	return c.Do(ctx, "DELETE", c.projectPath("/packages/"+url.PathEscape(packageID)), nil, nil)
 }
 
-// ListPackageProducts lists products attached to a package.
-func (c *Client) ListPackageProducts(ctx context.Context, packageID string) ([]Product, error) {
+// PackageProductBinding wraps a product attached to a package along with
+// the per-binding eligibility criteria. v2's
+// `GET /packages/{id}/products` returns this shape (NOT bare Product
+// rows) - a fact that an earlier implementation missed, leaving every
+// field empty on the unmarshal path.
+type PackageProductBinding struct {
+	EligibilityCriteria string  `json:"eligibility_criteria"`
+	Product             Product `json:"product"`
+}
+
+// ListPackageProducts lists products attached to a package, with
+// per-binding eligibility metadata. The returned bindings carry the
+// full nested Product (including display_name, app_id, store_identifier,
+// etc.) - no follow-up GET needed.
+func (c *Client) ListPackageProducts(ctx context.Context, packageID string) ([]PackageProductBinding, error) {
 	if err := c.requireProject(); err != nil {
 		return nil, err
 	}
-	return paginate[Product](ctx, c, c.projectPath("/packages/"+url.PathEscape(packageID)+"/products"))
+	return paginate[PackageProductBinding](ctx, c, c.projectPath("/packages/"+url.PathEscape(packageID)+"/products"))
+}
+
+// ListPackageProductsRaw is the same as ListPackageProducts but also
+// returns the verbatim per-item bytes from the v2 response, so the
+// command layer can emit the full server shape (including future
+// fields the typed structs don't model yet) on --output json.
+func (c *Client) ListPackageProductsRaw(ctx context.Context, packageID string) ([]PackageProductBinding, []json.RawMessage, error) {
+	if err := c.requireProject(); err != nil {
+		return nil, nil, err
+	}
+	return paginateBoth[PackageProductBinding](ctx, c, c.projectPath("/packages/"+url.PathEscape(packageID)+"/products"))
 }
 
 // PackageProductAttachment is one entry in the AttachProductsToPackage
