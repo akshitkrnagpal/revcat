@@ -94,19 +94,25 @@ This is the v2 endpoint that triggers RC's sync to the underlying store. Must be
 
 Without prices, `/v1/subscribers/{user_id}/offerings` returns the offering with `packages: []`, which is exactly the "SDK sees 0 packages" symptom. revcat cannot fix this from the CLI.
 
-### 7. Verify what the SDK will actually receive (v1 endpoint, curl fallback)
-
-revcat doesn't wrap v1, so this is the one place curl is the right tool:
+### 7. Verify what the SDK will actually receive (v1 offerings preview)
 
 ```sh
-# Use the PUBLIC SDK key (one of the test or production public keys), not the
-# v2 secret key. Get it via:
-#   revcat apps public-keys <app_id>
-TEST_KEY="<public_key>"
-curl -s "https://api.revenuecat.com/v1/subscribers/<user_id>/offerings" \
-    -H "Authorization: Bearer $TEST_KEY" \
-    -H "X-Platform: iOS"
+# Default platform is iOS, default user id is a synthetic revcat_preview_<unix_ms>.
+revcat offerings preview
+
+# Other platforms / a specific user / one offering:
+revcat offerings preview --platform android
+revcat offerings preview --as cust_abc123
+revcat offerings preview default --platform ios
+
+# Raw v1 JSON shape:
+revcat offerings preview --output json
 ```
+
+`revcat offerings preview` calls the v1 SDK-facing endpoint
+(`/v1/subscribers/{user_id}/offerings`) using the public SDK key for the
+project's app on the chosen platform. This is the same payload the
+on-device SDK sees from `Purchases.getOfferings()`.
 
 A healthy response looks like:
 
@@ -137,10 +143,9 @@ If `packages` is empty here, the SDK will also see empty. The cause is upstream 
 
 ## Where revcat does NOT cover the flow
 
-revcat wraps the v2 RC API. It does not cover:
+revcat primarily wraps the v2 RC API (with one v1 read in `offerings preview`). It does not cover:
 
 - **Test Store price setting** (dashboard UI only, no v2 endpoint exists)
-- **Per-subscriber offering preview** (v1 endpoint, use curl as shown in step 7)
 - **Sync status to App Store Connect / Play Console** beyond `push-to-store`
 
-If the user reaches for curl on any v2 endpoint, that's a revcat bug worth filing. If they reach for curl on a v1 endpoint or a dashboard-only operation, that's expected and this skill should call it out.
+If the user reaches for curl on any v2 endpoint, that's a revcat bug worth filing. If they reach for curl on a dashboard-only operation, that's expected and this skill should call it out.
