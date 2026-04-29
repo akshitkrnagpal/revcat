@@ -1,6 +1,11 @@
 package publish
 
-import "testing"
+import (
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+)
 
 func TestHashJSONStable(t *testing.T) {
 	a := map[string]any{"a": 1, "b": 2, "c": []any{1, 2, 3}}
@@ -51,6 +56,43 @@ func TestPlanStepsPaywallSkipWhenIdentical(t *testing.T) {
 	})
 	if len(steps) != 0 {
 		t.Fatalf("want 0 steps when paywall matches, got %d", len(steps))
+	}
+}
+
+func TestLoadPaywallTooLarge(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "huge_paywall.json")
+	big := make([]byte, 5*1024*1024)
+	for i := range big {
+		big[i] = 'x'
+	}
+	if err := os.WriteFile(path, big, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	_, err := loadPaywall(path)
+	if err == nil {
+		t.Fatal("want error for oversized paywall file")
+	}
+	if !strings.Contains(err.Error(), "input too large") {
+		t.Fatalf("want 'input too large' in error, got %q", err.Error())
+	}
+	if !strings.Contains(err.Error(), "4 MiB") {
+		t.Fatalf("want '4 MiB' in error, got %q", err.Error())
+	}
+}
+
+func TestLoadPaywallSmall(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "ok.json")
+	if err := os.WriteFile(path, []byte(`{"hello":"world"}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	body, err := loadPaywall(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if body["hello"] != "world" {
+		t.Fatalf("want hello=world, got %v", body["hello"])
 	}
 }
 

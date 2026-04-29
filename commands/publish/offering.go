@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
 	"sort"
 	"time"
 
@@ -191,9 +190,9 @@ func planSteps(isCurrent, wantCurrent bool, newPaywall map[string]any, paywallFe
 }
 
 func loadPaywall(path string) (map[string]any, error) {
-	b, err := os.ReadFile(path)
+	b, err := cliutil.ReadCappedFile(path)
 	if err != nil {
-		return nil, fmt.Errorf("read %s: %w", path, err)
+		return nil, err
 	}
 	var body map[string]any
 	if err := json.Unmarshal(b, &body); err != nil {
