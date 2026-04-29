@@ -36,3 +36,7 @@ require (
 	golang.org/x/sys v0.43.0 // indirect
 	golang.org/x/text v0.4.0 // indirect
 )
+
+// Pin jose2go to v1.7.0 to address DoS CVEs (GO-2025-4123, GO-2023-2409).
+// 99designs/keyring transitively pulls v1.5.0.
+replace github.com/dvsekhvalnov/jose2go => github.com/dvsekhvalnov/jose2go v1.7.0
