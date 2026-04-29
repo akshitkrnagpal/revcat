@@ -88,6 +88,18 @@ func (e *APIError) IsNotFound() bool { return e.Status == http.StatusNotFound }
 // Retries: 429 (respecting Retry-After when present) and 5xx, up to 3
 // attempts with exponential backoff (200ms, 600ms, 1.8s).
 func (c *Client) Do(ctx context.Context, method, path string, body any, out any) error {
+	_, err := c.doRaw(ctx, method, path, body, out)
+	return err
+}
+
+// DoRaw is like Do but also returns the verbatim response body. Used by
+// view commands that want to surface the full v2 response in --output json
+// without dropping fields the typed struct doesn't model.
+func (c *Client) DoRaw(ctx context.Context, method, path string, body any, out any) (json.RawMessage, error) {
+	return c.doRaw(ctx, method, path, body, out)
+}
+
+func (c *Client) doRaw(ctx context.Context, method, path string, body any, out any) (json.RawMessage, error) {
 	url := c.baseURL + path
 
 	var bodyBytes []byte
@@ -95,7 +107,7 @@ func (c *Client) Do(ctx context.Context, method, path string, body any, out any)
 		var err error
 		bodyBytes, err = json.Marshal(body)
 		if err != nil {
-			return fmt.Errorf("encode request: %w", err)
+			return nil, fmt.Errorf("encode request: %w", err)
 		}
 	}
 
@@ -105,7 +117,7 @@ func (c *Client) Do(ctx context.Context, method, path string, body any, out any)
 	for attempt := 1; attempt <= maxAttempts; attempt++ {
 		req, err := http.NewRequestWithContext(ctx, method, url, bytes.NewReader(bodyBytes))
 		if err != nil {
-			return err
+			return nil, err
 		}
 		req.Header.Set("Authorization", "Bearer "+c.secretKey)
 		req.Header.Set("Accept", "application/json")
@@ -119,7 +131,7 @@ func (c *Client) Do(ctx context.Context, method, path string, body any, out any)
 		resp, err := c.http.Do(req)
 		if err != nil {
 			if attempt == maxAttempts {
-				return fmt.Errorf("request: %w", err)
+				return nil, fmt.Errorf("request: %w", err)
 			}
 			time.Sleep(backoff)
 			backoff *= 3
@@ -132,7 +144,7 @@ func (c *Client) Do(ctx context.Context, method, path string, body any, out any)
 
 		if resp.StatusCode == 429 || resp.StatusCode >= 500 {
 			if attempt == maxAttempts {
-				return decodeError(resp.StatusCode, resp.Status, respBody)
+				return nil, decodeError(resp.StatusCode, resp.Status, respBody)
 			}
 			wait := backoff
 			if ra := resp.Header.Get("Retry-After"); ra != "" {
@@ -146,18 +158,20 @@ func (c *Client) Do(ctx context.Context, method, path string, body any, out any)
 		}
 
 		if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-			return decodeError(resp.StatusCode, resp.Status, respBody)
+			return nil, decodeError(resp.StatusCode, resp.Status, respBody)
 		}
 
-		if out == nil || len(respBody) == 0 {
-			return nil
+		if len(respBody) == 0 {
+			return nil, nil
 		}
-		if err := json.Unmarshal(respBody, out); err != nil {
-			return fmt.Errorf("decode response: %w", err)
+		if out != nil {
+			if err := json.Unmarshal(respBody, out); err != nil {
+				return nil, fmt.Errorf("decode response: %w", err)
+			}
 		}
-		return nil
+		return json.RawMessage(respBody), nil
 	}
-	return errors.New("exhausted retries")
+	return nil, errors.New("exhausted retries")
 }
 
 func decodeError(status int, statusText string, body []byte) error {

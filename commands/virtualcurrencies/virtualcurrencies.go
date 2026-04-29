@@ -62,12 +62,12 @@ var viewCmd = &cobra.Command{
 		}
 		ctx, cancel := context.WithTimeout(cmd.Context(), 30*time.Second)
 		defer cancel()
-		v, err := client.GetVirtualCurrency(ctx, strings.ToUpper(args[0]))
+		v, raw, err := client.GetVirtualCurrencyRaw(ctx, strings.ToUpper(args[0]))
 		if err != nil {
 			return err
 		}
 		if output.IsJSON() {
-			return output.JSON(v)
+			return output.JSON(raw)
 		}
 		rows := [][]any{
 			{"code", v.Code},

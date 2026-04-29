@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"encoding/json"
 	"net/url"
 )
 
@@ -61,6 +62,25 @@ func (c *Client) GetEntitlement(ctx context.Context, idOrKey string) (*Entitleme
 		return nil, err
 	}
 	return &out, nil
+}
+
+// GetEntitlementRaw fetches an entitlement and returns the verbatim v2
+// response alongside the typed projection.
+func (c *Client) GetEntitlementRaw(ctx context.Context, idOrKey string) (*Entitlement, json.RawMessage, error) {
+	if err := c.requireProject(); err != nil {
+		return nil, nil, err
+	}
+	id, err := c.ResolveEntitlementID(ctx, idOrKey)
+	if err != nil {
+		return nil, nil, err
+	}
+	var out Entitlement
+	path := c.projectPath("/entitlements/" + url.PathEscape(id))
+	raw, err := c.DoRaw(ctx, "GET", path, nil, &out)
+	if err != nil {
+		return nil, nil, err
+	}
+	return &out, raw, nil
 }
 
 // CreateEntitlement creates a new entitlement.

@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"encoding/json"
 	"net/url"
 )
 
@@ -89,6 +90,19 @@ func (c *Client) GetWebhook(ctx context.Context, id string) (*Webhook, error) {
 	return &w, nil
 }
 
+// GetWebhookRaw fetches one webhook and returns the verbatim v2 response.
+func (c *Client) GetWebhookRaw(ctx context.Context, id string) (*Webhook, json.RawMessage, error) {
+	if err := c.requireProject(); err != nil {
+		return nil, nil, err
+	}
+	var w Webhook
+	raw, err := c.DoRaw(ctx, "GET", c.projectPath("/integrations/webhooks/"+url.PathEscape(id)), nil, &w)
+	if err != nil {
+		return nil, nil, err
+	}
+	return &w, raw, nil
+}
+
 // CreateWebhook creates a webhook integration.
 func (c *Client) CreateWebhook(ctx context.Context, body map[string]any) (*Webhook, error) {
 	if err := c.requireProject(); err != nil {
@@ -151,6 +165,19 @@ func (c *Client) GetVirtualCurrency(ctx context.Context, idOrKey string) (*Virtu
 		return nil, err
 	}
 	return &v, nil
+}
+
+// GetVirtualCurrencyRaw fetches a VC and returns the verbatim v2 response.
+func (c *Client) GetVirtualCurrencyRaw(ctx context.Context, idOrKey string) (*VirtualCurrency, json.RawMessage, error) {
+	if err := c.requireProject(); err != nil {
+		return nil, nil, err
+	}
+	var v VirtualCurrency
+	raw, err := c.DoRaw(ctx, "GET", c.projectPath("/virtual_currencies/"+url.PathEscape(idOrKey)), nil, &v)
+	if err != nil {
+		return nil, nil, err
+	}
+	return &v, raw, nil
 }
 
 // CreateVirtualCurrency creates a VC.

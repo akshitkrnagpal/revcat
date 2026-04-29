@@ -60,12 +60,12 @@ var viewCmd = &cobra.Command{
 		}
 		ctx, cancel := context.WithTimeout(cmd.Context(), 30*time.Second)
 		defer cancel()
-		e, err := client.GetEntitlement(ctx, args[0])
+		e, raw, err := client.GetEntitlementRaw(ctx, args[0])
 		if err != nil {
 			return err
 		}
 		if output.IsJSON() {
-			return output.JSON(e)
+			return output.JSON(raw)
 		}
 		rows := [][]any{
 			{"id", e.LookupKey},

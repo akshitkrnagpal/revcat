@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"net/url"
 )
@@ -44,6 +45,20 @@ func (c *Client) GetSubscription(ctx context.Context, subID string) (*Subscripti
 		return nil, err
 	}
 	return &s, nil
+}
+
+// GetSubscriptionRaw fetches a subscription and returns the verbatim v2
+// response alongside the typed projection.
+func (c *Client) GetSubscriptionRaw(ctx context.Context, subID string) (*SubscriptionFull, json.RawMessage, error) {
+	if err := c.requireProject(); err != nil {
+		return nil, nil, err
+	}
+	var s SubscriptionFull
+	raw, err := c.DoRaw(ctx, "GET", c.projectPath("/subscriptions/"+url.PathEscape(subID)), nil, &s)
+	if err != nil {
+		return nil, nil, err
+	}
+	return &s, raw, nil
 }
 
 // ListSubscriptionTransactions pages billing events for a subscription.
@@ -152,6 +167,20 @@ func (c *Client) GetPurchase(ctx context.Context, purchaseID string) (*PurchaseF
 		return nil, err
 	}
 	return &p, nil
+}
+
+// GetPurchaseRaw fetches a purchase and returns the verbatim v2 response
+// alongside the typed projection.
+func (c *Client) GetPurchaseRaw(ctx context.Context, purchaseID string) (*PurchaseFull, json.RawMessage, error) {
+	if err := c.requireProject(); err != nil {
+		return nil, nil, err
+	}
+	var p PurchaseFull
+	raw, err := c.DoRaw(ctx, "GET", c.projectPath("/purchases/"+url.PathEscape(purchaseID)), nil, &p)
+	if err != nil {
+		return nil, nil, err
+	}
+	return &p, raw, nil
 }
 
 // ListPurchaseEntitlements lists entitlements granted by a purchase.
