@@ -57,11 +57,7 @@ func (s *localStore) save(lf *localFile) error {
 	if err := writeGitignoreOnce(filepath.Dir(s.path)); err != nil {
 		return err
 	}
-	b, err := json.MarshalIndent(lf, "", "  ")
-	if err != nil {
-		return err
-	}
-	return os.WriteFile(s.path, b, 0o600)
+	return atomicWriteJSON(s.path, lf)
 }
 
 func writeGitignoreOnce(dir string) error {

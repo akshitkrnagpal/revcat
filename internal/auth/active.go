@@ -24,6 +24,10 @@ func activeFilePath() (string, error) {
 }
 
 // SetActive persists the active profile name. Creates ~/.revcat if missing.
+//
+// Writes are atomic via tempfile + rename so a Ctrl-C mid-write or two
+// concurrent `revcat auth use` invocations cannot leave a half-written
+// active file.
 func SetActive(name string) error {
 	path, err := activeFilePath()
 	if err != nil {
@@ -32,7 +36,7 @@ func SetActive(name string) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
 		return err
 	}
-	return os.WriteFile(path, []byte(name+"\n"), 0o600)
+	return atomicWriteFile(path, []byte(name+"\n"), 0o600)
 }
 
 // GetActive reads the active profile name. Returns empty string if unset
