@@ -3,7 +3,7 @@ title: apps
 description: Inspect RevenueCat apps (per-platform inside a project).
 ---
 
-Each project has one app per platform/storefront (one for iOS, one for Android, etc.). App create / update / delete needs a partner-tier key and is not exposed here; this group is read-only for normal secret keys.
+Each project has one app per platform/storefront (one for iOS, one for Android, etc.). App create / update / delete isn't exposed by the v2 API revcat targets; this group is read-only.
 
 ## Subcommands
 

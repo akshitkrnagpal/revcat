@@ -1,11 +1,11 @@
 ---
 name: revcat-getting-started
-description: Use when the user wants to start using revcat, the RevenueCat CLI. Covers install (Homebrew, go install), auth (sk_ keys + keychain, profiles), and the top-level command map. Triggers on "revcat", "RevenueCat CLI", "set up revcat", "what can revcat do".
+description: Use when the user wants to start using revcat, the RevenueCat CLI. Covers install (Homebrew, go install), auth (browser OAuth + per-repo .revcat/config.json), and the top-level command map. Triggers on "revcat", "RevenueCat CLI", "set up revcat", "what can revcat do".
 ---
 
 # revcat - getting started
 
-`revcat` is a CLI for RevenueCat. It runs every API operation a per-project secret key can reach, so you don't have to keep clicking through the dashboard. Single static Go binary, JSON-first when piped, table output on a TTY.
+`revcat` is a CLI for RevenueCat. It runs every v2 API operation reachable via OAuth, so you don't have to keep clicking through the dashboard. Single static Go binary, JSON-first when piped, table output on a TTY.
 
 GitHub: <https://github.com/akshitkrnagpal/revcat>
 Docs: <https://revcat.vercel.app>
@@ -23,36 +23,45 @@ Pre-built binaries for every platform are on the [GitHub Releases page](https://
 
 ## Auth (one-time)
 
-revcat supports two credential models. The default is a v2 secret key:
-
-Pipe the key in via stdin so it does not land in your shell history:
-
 ```sh
-echo $RC_KEY | revcat auth login --name my-app --secret-key-stdin
-revcat auth doctor             # verify
+revcat auth login                # browser OAuth, saves tokens to OS keychain
+cd ~/your-repo && revcat init    # bind this repo to a project
+revcat auth doctor               # verify
 ```
 
-`--secret-key sk_...` works too, but the key is visible in shell history and
-process listings. Prefer `--secret-key-stdin` for production and CI.
+`revcat auth login` opens the browser for the OAuth flow and stores the tokens in your OS keychain. `revcat init` walks the user through picking a project (and optionally apps), then writes:
 
-Browser-based OAuth (PKCE) login is also supported:
+- `revcat.toml` (committed): project_id + apps. Documents which RC project this repo belongs to.
+- `.revcat/config.json` (gitignored, mode 0600): copies the credential into the directory. Walked up from cwd by every revcat command, so agents and sandboxes inside the directory inherit the credential without keychain access.
 
-```sh
-revcat auth login --oauth --name my-app
-# tokens auto-refresh on every command thereafter
-```
+`.revcat/` is auto-appended to `.gitignore`.
 
-For CI / Docker (no keychain), use one of:
+### Linux / containers without secret-service
 
 ```sh
-# A: env var only (one-shot)
-REVCAT_API_KEY=sk_xxx revcat metrics overview
-
-# B: write a profile to ./.revcat/config.json (auto-gitignored)
-echo $RC_KEY | revcat auth login --bypass-keychain --name ci --secret-key-stdin --no-verify
+revcat auth login --bypass-keychain    # writes ~/.revcat/config.json instead of keychain
 ```
 
-Switch profiles with `revcat auth use <name>` or `--profile <name>` per-command.
+### Headless / CI
+
+```sh
+export REVCAT_REFRESH_TOKEN=rtk_...
+export REVCAT_PROJECT_ID=proj_...
+revcat offerings list
+```
+
+revcat synthesizes a virtual profile, refreshes tokens in-memory, no keychain or login flow. Pull the refresh token from your CI secret manager.
+
+### Multi-account
+
+```sh
+revcat auth login --name work
+revcat auth login --name personal
+revcat auth use personal               # default for global commands
+revcat --profile work auth status      # one-shot override
+```
+
+When you `revcat init` inside a repo, it copies whichever profile is active at that moment. To switch credentials for an existing repo, rerun `revcat init --force`.
 
 ## Top-level command map
 
@@ -73,24 +82,23 @@ Verb-orchestrators:
 
 Auth + housekeeping:
 
-- `auth`, `doctor`, `completion`, `version`
+- `auth`, `init`, `doctor`, `completion`, `version`
 
 ## Global flags (every command)
 
-- `--profile <name>` - active auth profile
-- `--bypass-keychain` - read/write profile from `./.revcat/config.json`
+- `--profile <name>` - active global profile (overridden by walked-up `.revcat/config.json`)
+- `--project-id <id>` - override the resolved project id for this invocation
+- `--bypass-keychain` - use `~/.revcat/config.json` (file backend) instead of OS keychain
 - `--output table|json|csv|markdown` - force a format (auto: table on TTY, JSON when piped)
 - `--pretty` - indent JSON
 - `-v / -q / --no-color / --debug`
 
 ## What revcat does NOT cover (out of scope)
 
-- `POST /projects` (project create) - partner-tier key
-- App CRUD (`POST /apps`, etc.) - partner-tier key
-- `GET /collaborators` - partner-tier key
+- `POST /projects` (project create) - not in v2 REST
+- App CRUD - not in v2 REST
+- `GET /collaborators` - not in v2 REST
 - An events firehose - RC delivers lifecycle events via webhooks, not a REST stream. Use `revcat webhooks create` to register your endpoint.
-
-Manage the partner-tier items in the dashboard. Everything else a project secret key can do is wrapped.
 
 ## First useful commands
 

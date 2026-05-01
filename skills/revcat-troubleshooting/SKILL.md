@@ -13,31 +13,48 @@ For deep debugging:
 REVCAT_DEBUG=api revcat <command>
 ```
 
-Logs the full request and response (with the secret key redacted).
+Logs the full request and response (with the bearer token redacted).
 
-## "the key was rejected (401 unauthorized)"
+## "the credentials were rejected (401 unauthorized)"
 
 The login step or any later command got 401.
 
-- Confirm you're using a **v2 secret key** (starts with `sk_`), not a public SDK key.
-- The key may have been rotated. Generate a new one in the dashboard and re-run `echo $RC_KEY | revcat auth login --name <name> --secret-key-stdin` (or `--secret-key sk_xxx` if you don't mind the key in shell history).
-- If you're hitting a partner-tier endpoint (project create, app CRUD, audit logs, collaborators) with a project secret key, you'll see 401/403. Those are out of scope for revcat.
+- The OAuth token may have been revoked (Account Security UI in the RC dashboard) or the refresh token expired. Re-run `revcat auth login`.
+- If you're trying to call something the v2 REST API doesn't expose (project create, app CRUD, collaborators), you'll see 401/403/404. Those are out of scope for revcat.
+
+## "this profile was created under v0.3 secret-key auth"
+
+You're upgrading from v0.3 (or earlier). Secret-key auth was removed in v0.4.
+
+```sh
+revcat auth logout --all   # clear stale profiles
+revcat auth login          # re-auth via OAuth
+cd ~/your-repo && revcat init
+```
 
 ## "no profile found - run `revcat auth login`"
 
-There is no active profile to use.
+There is no credential to use.
 
-- First time: `echo $RC_KEY | revcat auth login --name my-app --secret-key-stdin` (recommended, no shell-history leak), or `revcat auth login --name my-app --secret-key sk_xxx`.
+- First time: `revcat auth login` (browser OAuth).
 - Already logged in elsewhere? Check what's set: `revcat auth list`.
-- Switch with `revcat auth use <name>` or per-command `--profile <name>`.
-- In CI: pass `REVCAT_API_KEY=sk_xxx` directly, or use `--bypass-keychain` so revcat reads `./.revcat/config.json`.
+- Switch global profiles with `revcat auth use <name>` or per-command `--profile <name>`.
+- Inside a repo: `revcat init` writes a `.revcat/config.json` so subsequent commands in that directory pick it up automatically.
+- In CI: set `REVCAT_REFRESH_TOKEN=rtk_...` and `REVCAT_PROJECT_ID=proj_...`, or pass `--bypass-keychain` and ship a populated `~/.revcat/config.json`.
 
-## "no project_id on profile"
+## "no project_id resolved" / project context missing
 
-The active profile knows the secret key but not which project to call.
+The credential resolved fine but no project id is set.
 
-- Re-run `revcat auth login` and pick the project at the prompt.
-- Or set `REVCAT_PROJECT_ID=proj_xxx` for a one-off override.
+- Inside a repo: run `revcat init` to bind it.
+- One-off override: `--project-id proj_xxx` or `REVCAT_PROJECT_ID=proj_xxx`.
+
+## "toml/local mismatch" in `revcat auth doctor`
+
+`revcat.toml` (committed) and `.revcat/config.json` (gitignored) disagree about which project this directory is bound to.
+
+- Common cause: someone hand-edited `revcat.toml` without rerunning `revcat init`.
+- Fix: `revcat init --force` to realign, or edit `revcat.toml` to match the local config and commit.
 
 ## "no customer with id ... in this project"
 
@@ -90,7 +107,7 @@ revcat tracks v2. The v1 surface is intentionally out of scope. The few v1 endpo
 - `GET /v1/subscribers/{user_id}/offerings` - what the SDK actually receives. Use this to diff "what the dashboard shows" vs "what `Purchases.getOfferings()` returns." See `revcat-storefront-debug` for the curl pattern.
 - `POST /v1/subscribers/{user_id}/receipts` - validate a store receipt. Used by SDKs internally; not a debugging endpoint.
 
-When you fall back to curl for v1, use the **public SDK key** (one of the per-platform public keys), not the v2 secret key. Pull it via `revcat apps public-keys <app_id>`.
+When you fall back to curl for v1, use the **public SDK key** (one of the per-platform public keys), not the OAuth bearer token. Pull it via `revcat apps public-keys <app_id>`.
 
 ## Dashboard-only operations
 
@@ -104,6 +121,6 @@ If the user reaches for the dashboard for one of these, that's expected. If they
 
 ## Where revcat does NOT work
 
-- Project create, app CRUD, collaborators - need a partner-tier API key.
+- Project create, app CRUD, collaborators - not exposed by the v2 REST API.
 - An events firehose - RC delivers lifecycle events via webhooks (`revcat webhooks`), not a REST stream.
 - Anything not in `revcat <group> --help` - revcat tracks v2; v1-only endpoints are not wrapped (see above for the curl fallback).

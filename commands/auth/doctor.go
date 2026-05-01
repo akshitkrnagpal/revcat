@@ -10,6 +10,7 @@ import (
 	authstore "github.com/akshitkrnagpal/revcat/internal/auth"
 	"github.com/akshitkrnagpal/revcat/internal/cliutil"
 	"github.com/akshitkrnagpal/revcat/internal/output"
+	"github.com/akshitkrnagpal/revcat/internal/project"
 )
 
 var doctorCmd = &cobra.Command{
@@ -75,6 +76,24 @@ func runAuthDoctor(cmd *cobra.Command, args []string) error {
 			checks = append(checks, check{name: "project context", ok: false, msg: resolvedProject + " not accessible to this credential", hint: "the project may have been moved or this credential lacks access"})
 		} else {
 			checks = append(checks, check{name: "project context", ok: true, msg: resolvedProject})
+		}
+	}
+
+	// Mismatch detector: revcat.toml is committed and meant to declare
+	// which project the repo belongs to; .revcat/config.json (loaded
+	// via SourceLocal) is the gitignored credential half. They should
+	// agree. Disagreement means someone init'd a different project, or
+	// edited the toml without rerunning init.
+	if resolved.Source == authstore.SourceLocal {
+		if cfg, err := project.LoadFromCwd(); err == nil && cfg.ProjectID != "" {
+			if cfg.ProjectID != resolved.ProjectID {
+				checks = append(checks, check{
+					name: "toml/local mismatch",
+					ok:   false,
+					msg:  fmt.Sprintf("revcat.toml says %s, .revcat/config.json says %s", cfg.ProjectID, resolved.ProjectID),
+					hint: "rerun `revcat init --force` to realign, or edit revcat.toml to match",
+				})
+			}
 		}
 	}
 

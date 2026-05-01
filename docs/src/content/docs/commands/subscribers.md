@@ -54,7 +54,7 @@ revcat translates duration to an absolute `expires_at` (Unix ms) before sending 
 
 ## What's not exposed (RC v2 limitations)
 
-These actions don't have v2 endpoints we can call with a project secret key. Manage in the dashboard:
+These actions don't have v2 endpoints. Manage in the dashboard:
 
 - override an offering for one customer
 - force a Play Store entitlement re-check

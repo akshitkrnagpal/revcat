@@ -1,56 +1,75 @@
 ---
 title: auth
-description: Manage RevenueCat authentication profiles.
+description: Manage RevenueCat OAuth credentials.
 ---
 
-revcat stores credentials in your OS keychain by default. Each set of credentials is a "profile" with a name, secret key, and project id.
+revcat authenticates against RevenueCat via OAuth (PKCE). One browser login populates a global profile in your OS keychain; running `revcat init` inside a repo writes a per-directory `.revcat/config.json` (gitignored, mode 0600) so agents and sandboxes operating in the directory inherit the credential without keychain access.
 
-For CI, pass `--bypass-keychain` (or set `REVCAT_BYPASS_KEYCHAIN=1`) to use a local file instead, or pass `REVCAT_API_KEY` directly.
+For Linux containers without secret-service, pass `--bypass-keychain` (or set `REVCAT_BYPASS_KEYCHAIN=1`) to use `~/.revcat/config.json` instead. For headless CI / fresh sandboxes, set `REVCAT_REFRESH_TOKEN` to skip both keychain and login flow.
 
 ## Subcommands
 
 | Command | Description |
 | --- | --- |
-| `auth login` | Save credentials as a named profile (secret key or OAuth) |
-| `auth status` | Show the active auth profile (`--validate` hits the API) |
+| `auth login` | Run the browser OAuth flow and save tokens |
+| `auth status` | Show the resolved credential and where it came from (`--validate` hits the API) |
 | `auth doctor` | Self-diagnose auth setup |
-| `auth use <name>` | Set the default auth profile |
-| `auth list` | List stored auth profiles |
-| `auth logout [name]` | Remove a stored auth profile (`--all` wipes them all) |
+| `auth use <name>` | Set the default global profile |
+| `auth list` | List stored global profiles |
+| `auth logout [name]` | Remove a stored profile (`--all` wipes them all) |
 
-## Auth modes
+## Storage tiers
 
-revcat supports two credential models, both stored in the OS keychain:
+| Tier | Path | Used when |
+| --- | --- | --- |
+| keychain | OS keychain | default for `auth login` |
+| global file | `~/.revcat/config.json` | `--bypass-keychain` or `REVCAT_BYPASS_KEYCHAIN=1` |
+| local file | `./.revcat/config.json` (walked up from cwd) | written by `revcat init` |
 
-1. **v2 secret key** (default). Pass `--secret-key sk_...`. Simple and scriptable.
-2. **OAuth (PKCE)**. Pass `--oauth`. revcat opens your browser, you authorize against RevenueCat, the access + refresh tokens land on the profile. Tokens auto-refresh on each command. Requires a registered OAuth `client_id` (set `REVCAT_OAUTH_CLIENT_ID` or pass `--client-id`).
+Resolution order: `REVCAT_REFRESH_TOKEN` env > walked-up local file > global active profile.
 
 ## Examples
 
 ```sh
-# secret key
-revcat auth login --name my-app --secret-key sk_xxx
-revcat auth login --name my-app --secret-key sk_xxx --project-id proj_xxx --no-verify   # CI
+# First-time setup
+revcat auth login                      # browser OAuth, default profile
+cd ~/your-repo && revcat init          # bind this repo to a project
 
-# oauth (requires a registered client_id)
-revcat auth login --oauth --name my-app
-REVCAT_OAUTH_CLIENT_ID=<id> revcat auth login --oauth --name my-app
+# Multi-account
+revcat auth login --name work
+revcat auth login --name personal
+revcat auth use personal               # default for global commands
 
+# Status / health
 revcat auth status --validate
 revcat auth doctor
-revcat auth use my-app
-revcat auth list
-revcat auth logout my-app
+
+# Cleanup
+revcat auth logout work                # remove a profile
+revcat auth logout --all               # wipe all profiles
 ```
 
-## Resolution order
+## CI / headless
 
-Active profile is resolved in this order:
+```sh
+# In a fresh container with no browser
+export REVCAT_REFRESH_TOKEN=rtk_...
+export REVCAT_PROJECT_ID=proj_...
+revcat offerings list
+```
 
-1. `REVCAT_API_KEY` env (synthesizes a one-shot profile)
-2. `--profile <name>` flag
-3. `REVCAT_PROFILE` env
-4. `~/.revcat/active` (set by `revcat auth use`)
-5. profile named `default`
+The refresh token is account-scoped; treat it like a long-lived credential and store it in your CI secret manager.
 
-See [Configuration](/reference/configuration/) for env vars and defaults.
+## Resolution order (full)
+
+Credential:
+
+1. `REVCAT_REFRESH_TOKEN` env (synthesizes a virtual profile)
+2. Walked-up `./.revcat/config.json`
+3. Global keychain or `~/.revcat/config.json` for the active profile
+
+Active global profile name: `--profile <name>` flag > `REVCAT_PROFILE` env > `~/.revcat/active` (set by `auth use`) > `default`.
+
+Project id: `--project-id` flag > `REVCAT_PROJECT_ID` env > resolved credential's bound project (local config or env hatch) > walked-up `revcat.toml`.
+
+See [Configuration](/reference/configuration/) for the full env var list.

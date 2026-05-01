@@ -25,8 +25,11 @@ Sign in once, then everything is one command away.
 # install (Go 1.23+)
 go install github.com/akshitkrnagpal/revcat/cmd/revcat@latest
 
-# auth
-revcat auth login --name my-app --secret-key sk_xxx
+# auth (browser OAuth)
+revcat auth login
+
+# bind this repo to a project
+cd ~/your-repo && revcat init
 
 # debug a customer
 revcat subscribers info app_user_123
@@ -47,12 +50,13 @@ revcat publish offering pro --paywall ./paywalls/pro.json
     Tables when you're at a terminal, JSON when you pipe into a script.
     Built for `jq`, CI, and Claude Code.
   </Card>
-  <Card title="Keychain auth" icon="setting">
-    Profiles in your OS keychain by default. `--bypass-keychain` for CI
-    and containers. Multiple named profiles for dev / staging / prod.
+  <Card title="OAuth + per-repo context" icon="setting">
+    One browser login goes into the OS keychain. `revcat init` writes a
+    gitignored `.revcat/config.json` so agents and sandboxes inherit the
+    credential per directory. `REVCAT_REFRESH_TOKEN` for headless CI.
   </Card>
   <Card title="Full v2 coverage" icon="approve-check">
-    Every v2 endpoint a per-project secret key can reach is wrapped:
+    Every v2 endpoint your OAuth scope can reach is wrapped:
     entitlements, offerings, products, paywalls, customers, metrics,
     charts, audit logs, webhooks, virtual currencies.
   </Card>

@@ -7,19 +7,22 @@ import "github.com/spf13/cobra"
 var Cmd = &cobra.Command{
 	Use:   "auth",
 	Short: "Manage RevenueCat authentication",
-	Long: `revcat stores credentials in your OS keychain by default. Each set of
-credentials is a "profile" with a name, secret key, and project id.
+	Long: `revcat authenticates against RevenueCat via OAuth. One browser login
+populates a global profile in your OS keychain; a per-repo
+.revcat/config.json (written by ` + "`revcat init`" + `) carries that credential
+into the directory so agents and sandboxes work without keychain access.
 
 Most users only need:
 
-    echo $RC_KEY | revcat auth login --name my-app --secret-key-stdin
+    revcat auth login            # browser OAuth, saves to keychain
+    cd ~/your/repo && revcat init   # bind this repo to a project
     revcat auth status
 
---secret-key sk_... works too, but the key ends up in your shell history.
-Prefer --secret-key-stdin for production and CI.
+For Linux containers without secret-service, pass --bypass-keychain
+(or set REVCAT_BYPASS_KEYCHAIN=1) to use ~/.revcat/config.json instead.
 
-For CI, pass --bypass-keychain (or set REVCAT_BYPASS_KEYCHAIN=1) to use a
-local file instead, or pass REVCAT_API_KEY directly.`,
+For CI / fresh sandboxes with no browser: set REVCAT_REFRESH_TOKEN
+(and REVCAT_PROJECT_ID) to skip both keychain and login flow.`,
 }
 
 func init() {

@@ -4,15 +4,15 @@ description: Map every RevenueCat v2 operation to the revcat command that wraps 
 ---
 
 
-revcat aims for full v2 coverage with the per-project secret key. This file maps every documented operation to the revcat command that wraps it.
+revcat aims for full v2 coverage. This file maps every documented operation to the revcat command that wraps it.
 
 Source of truth: <https://www.revenuecat.com/docs/api-v2>.
 
 ## Headline
 
-- Most v2 operations reachable with a per-project secret key are wrapped and smoke-tested.
+- Most v2 operations reachable with revcat's OAuth scope set are wrapped and smoke-tested.
 - A few endpoints don't exist on the v2 customer surface at all - documented at the bottom.
-- A small slice (project create, app CRUD, collaborators) needs a partner-tier key.
+- A small slice (project create, app CRUD, collaborators) isn't exposed by v2 REST.
 - RC v2 has no REST events firehose; lifecycle events are webhook-delivered. revcat exposes webhook CRUD; subscribe your own endpoint with `revcat webhooks create`.
 
 ## Coverage
@@ -192,7 +192,7 @@ Source of truth: <https://www.revenuecat.com/docs/api-v2>.
 - App CRUD (`POST /apps`, `POST /apps/{id}`, `DELETE /apps/{id}`)
 - `GET /collaborators`
 
-## Not exposed by v2 REST (or rejects project secret keys)
+## Not exposed by v2 REST
 
 These endpoints either return 404 across the v2 customer surface or are gated behind a higher-tier key. Smoke-tested 2026-04-25:
 
@@ -204,4 +204,4 @@ These endpoints either return 404 across the v2 customer surface or are gated be
 - `POST /customers/{id}/virtual_currencies_balances`
 - `POST /customers/{id}/actions/revoke_entitlement` (no-op in revcat: implemented as "grant with near-future expires_at")
 
-These need a project-management / partner-tier API key. revcat targets the per-project secret key, so they live in the dashboard.
+These aren't exposed by the v2 REST API. They live in the dashboard.

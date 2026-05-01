@@ -28,8 +28,8 @@ client is RevenueCat's public PKCE client by default; override with
 REVCAT_OAUTH_CLIENT_ID or --client-id.
 
 Tokens are written to your OS keychain. Pass --bypass-keychain (or set
-REVCAT_BYPASS_KEYCHAIN=1) to use ~/.revcat/config.json instead, useful
-on Linux without secret-service or in CI/containers.
+REVCAT_BYPASS_KEYCHAIN=1) to use ~/.revcat/config.json (HOME) instead,
+useful on Linux without secret-service or in containers.
 
 After login, run ` + "`revcat init`" + ` inside your project directory to bind
 a project_id (or set REVCAT_PROJECT_ID per command).
