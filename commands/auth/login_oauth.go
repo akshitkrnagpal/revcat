@@ -24,7 +24,7 @@ func runOAuthLogin(cmd *cobra.Command) error {
 		clientID = authstore.OAuthClientID()
 	}
 	if clientID == "" {
-		return errors.New("no OAuth client_id configured. set REVCAT_OAUTH_CLIENT_ID or pass --client-id. RevenueCat must register revcat as a public OAuth client first; see https://www.revenuecat.com/docs/projects/oauth-setup")
+		return errors.New("no OAuth client_id configured. set REVCAT_OAUTH_CLIENT_ID, pass --client-id, or build with -ldflags '-X .../auth.EmbeddedClientID=<id>'")
 	}
 
 	scopes := loginScopes
@@ -43,7 +43,7 @@ func runOAuthLogin(cmd *cobra.Command) error {
 	}
 	defer server.Close()
 
-	state, err := randomStateOrFatal()
+	state, err := api.RandomState()
 	if err != nil {
 		return err
 	}
@@ -135,13 +135,3 @@ func runOAuthLogin(cmd *cobra.Command) error {
 	return nil
 }
 
-// randomStateOrFatal wraps the api.randomState helper - the real impl
-// lives in the api package so api/oauth_test can exercise it.
-func randomStateOrFatal() (string, error) {
-	// borrow the same generator the api package uses for PKCE.
-	p, err := api.NewPKCE()
-	if err != nil {
-		return "", err
-	}
-	return p.Verifier, nil
-}

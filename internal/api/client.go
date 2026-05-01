@@ -147,7 +147,7 @@ func (c *Client) doRaw(ctx context.Context, method, path string, body any, out a
 		}
 		token, err := c.tokenSrc.Token(ctx)
 		if err != nil {
-			return fmt.Errorf("auth: %w", err)
+			return nil, fmt.Errorf("auth: %w", err)
 		}
 		req.Header.Set("Authorization", "Bearer "+token)
 		req.Header.Set("Accept", "application/json")

@@ -22,10 +22,21 @@ import (
 //
 //	GET https://api.revenuecat.com/oauth2/authorize
 //	POST https://api.revenuecat.com/oauth2/token
-const (
+//
+// Vars (not consts) so tests can point at httptest servers via
+// overrideTokenURL.
+var (
 	OAuthAuthorizeURL = "https://api.revenuecat.com/oauth2/authorize"
 	OAuthTokenURL     = "https://api.revenuecat.com/oauth2/token"
 )
+
+// overrideTokenURL swaps the OAuth token endpoint and returns a restore
+// function. Test helper - not used by production code.
+func overrideTokenURL(u string) func() {
+	prev := OAuthTokenURL
+	OAuthTokenURL = u
+	return func() { OAuthTokenURL = prev }
+}
 
 // DefaultScopes is the set we ask for on `revcat auth login --oauth`.
 // Tracks what the CLI actually exercises today, plus project bootstrap.
@@ -77,9 +88,9 @@ func NewPKCE() (*PKCEPair, error) {
 	}, nil
 }
 
-// randomState returns a hex-encoded random string for the OAuth `state`
-// parameter (CSRF protection).
-func randomState() (string, error) {
+// RandomState returns a base64url-encoded random string suitable for the
+// OAuth `state` parameter (CSRF guard for the redirect).
+func RandomState() (string, error) {
 	buf := make([]byte, 16)
 	if _, err := rand.Read(buf); err != nil {
 		return "", err

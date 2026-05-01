@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"sync"
 	"time"
 
@@ -14,22 +15,19 @@ import (
 const envClientID = "REVCAT_OAUTH_CLIENT_ID"
 
 // EmbeddedClientID is the OAuth client_id baked into release builds.
-// Empty until RevenueCat registers revcat as a public OAuth client.
+// Defaults to revcat's public PKCE client registered with RevenueCat.
 //
 // Override at build time via:
 //
 //	go build -ldflags "-X github.com/akshitkrnagpal/revcat/internal/auth.EmbeddedClientID=<id>"
 //
 // Or at runtime via the REVCAT_OAUTH_CLIENT_ID env var.
-var EmbeddedClientID = ""
+var EmbeddedClientID = "UmV2Q2F0"
 
 // OAuthClientID returns the active client_id, env override taking
 // precedence over the embedded constant.
 func OAuthClientID() string {
-	if v := envClientID; v != "" {
-		// resolved below
-	}
-	if v := envOrEmpty(envClientID); v != "" {
+	if v := os.Getenv(envClientID); v != "" {
 		return v
 	}
 	return EmbeddedClientID
@@ -114,6 +112,3 @@ func (s *OAuthTokenSource) applyToken(t *api.TokenResponse) {
 	}
 }
 
-// envOrEmpty is a tiny wrapper around os.Getenv so callers can stub
-// during tests if needed.
-var envOrEmpty = func(key string) string { return getenv(key) }
