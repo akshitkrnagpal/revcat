@@ -26,7 +26,7 @@ func TestGetApp_EscapesAppID(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	c := New(Options{SecretKey: "sk", ProjectID: "proj_xyz", BaseURL: srv.URL})
+	c := New(Options{TokenSource: stubToken("sk"), ProjectID: "proj_xyz", BaseURL: srv.URL})
 
 	if _, err := c.GetApp(context.Background(), trickyID); err != nil {
 		t.Fatalf("GetApp: %v", err)

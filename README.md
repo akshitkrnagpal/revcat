@@ -10,7 +10,8 @@ The RevenueCat CLI. Run your RevenueCat project from the terminal instead of cli
 ![revcat demo](./demo/demo.gif)
 
 ```sh
-echo $RC_KEY | revcat auth login --name my-app --secret-key-stdin
+revcat auth login                        # browser OAuth, saves to keychain
+cd ~/your-repo && revcat init            # bind this repo to a project
 revcat subscribers info app_user_123
 revcat metrics overview
 revcat publish offering pro --paywall ./paywalls/pro.json
@@ -18,7 +19,7 @@ revcat publish offering pro --paywall ./paywalls/pro.json
 
 ## Why
 
-RevenueCat ships a dashboard, REST API, and (2025) an MCP server, but no first-party CLI. revcat covers the v2 REST API surface a per-project secret key can reach: full CRUD on entitlements, offerings, packages, products, paywalls, webhooks, virtual currencies; per-customer grants/refunds/transfers; metrics + charts; audit-logs.
+RevenueCat ships a dashboard, REST API, and (2025) an MCP server, but no first-party CLI. revcat covers the v2 REST API surface accessible via OAuth: full CRUD on entitlements, offerings, packages, products, paywalls, webhooks, virtual currencies; per-customer grants/refunds/transfers; metrics + charts; audit-logs.
 
 Output is a colored table when you're at a terminal and JSON when you're piping into a script - no `--json` ceremony.
 
@@ -35,34 +36,43 @@ Pre-built binaries for every platform are on the [Releases page](https://github.
 
 ## Auth
 
-revcat reads a RevenueCat v2 secret key (`sk_...`). One of:
-
-1. `REVCAT_API_KEY` env (highest precedence, one-shot)
-2. `--profile <name>` flag
-3. `REVCAT_PROFILE` env
-4. `~/.revcat/active` (set via `revcat auth use <name>`)
-5. profile named `default`
-
-Profiles live in your OS keychain by default. For containers/CI, pass `--bypass-keychain` (or `REVCAT_BYPASS_KEYCHAIN=1`) and the profile is written to `./.revcat/config.json` instead. A `.gitignore` is created on first write.
-
-Recommended: pipe the key in via stdin so it never lands in your shell history.
+revcat authenticates against RevenueCat via OAuth (PKCE). One browser login populates a global profile in your OS keychain; running `revcat init` inside a repo writes a per-directory `.revcat/config.json` (gitignored, mode 0600) so agents and sandboxes operating in that directory inherit the credential without keychain access.
 
 ```sh
-echo $RC_KEY | revcat auth login --name my-app --secret-key-stdin
-revcat auth status --validate
-revcat auth doctor                   # diagnose common breakage
-revcat auth list
-revcat auth use my-app
+revcat auth login                        # browser OAuth
+cd ~/your-repo && revcat init            # binds this repo to a project
+revcat auth status --validate            # confirm
+revcat auth doctor                       # diagnose
 ```
 
-`--secret-key sk_...` works too, but the key is then visible in your shell
-history and any process listing. Prefer `--secret-key-stdin` for production
-and CI.
+### Storage tiers
+
+| Tier | Path | Used when |
+| --- | --- | --- |
+| keychain | OS keychain | default for `auth login` |
+| global file | `~/.revcat/config.json` | `--bypass-keychain` or `REVCAT_BYPASS_KEYCHAIN=1` |
+| local file | `./.revcat/config.json` (walked up) | written by `revcat init` |
+
+Resolution: `REVCAT_REFRESH_TOKEN` env > walked-up local file > global active profile.
+
+### Multi-account
 
 ```sh
-# Secondary form (key visible in history; convenient for local exploration):
-revcat auth login --name my-app --secret-key sk_xxx
+revcat auth login --name work
+revcat auth login --name personal
+revcat auth use personal                 # default for global commands
+revcat --profile work auth status        # one-shot override
 ```
+
+### Headless / CI
+
+```sh
+export REVCAT_REFRESH_TOKEN=rtk_...
+export REVCAT_PROJECT_ID=proj_...
+revcat offerings list
+```
+
+revcat synthesizes a virtual profile, refreshes tokens in-memory, no keychain or login flow. Pull the refresh token from your CI secret manager.
 
 ## Command surface
 
@@ -158,7 +168,7 @@ revcat audit-logs list
 
 ## Out of scope
 
-A small slice of the v2 API is gated behind a project-management / partner-tier key (not the per-project secret keys revcat uses). Those are not implemented:
+A small slice of the v2 API isn't exposed by REST at all. Those are not implemented:
 
 - `POST /projects` (project create)
 - App CRUD (`POST /apps`, `POST /apps/{id}`, `DELETE /apps/{id}`)
@@ -171,7 +181,7 @@ RC also has no REST events firehose; lifecycle events (purchases, renewals, canc
 ## Debug
 
 ```sh
-REVCAT_DEBUG=api revcat metrics overview     # logs full request/response (key redacted)
+REVCAT_DEBUG=api revcat metrics overview     # logs full request/response (token redacted)
 revcat doctor                                # top-level health check
 revcat auth doctor                           # auth-specific
 ```

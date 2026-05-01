@@ -3,15 +3,14 @@ package auth
 import (
 	"context"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
 
-	"github.com/akshitkrnagpal/revcat/internal/api"
 	authstore "github.com/akshitkrnagpal/revcat/internal/auth"
 	"github.com/akshitkrnagpal/revcat/internal/cliutil"
 	"github.com/akshitkrnagpal/revcat/internal/output"
+	"github.com/akshitkrnagpal/revcat/internal/project"
 )
 
 var doctorCmd = &cobra.Command{
@@ -33,69 +32,67 @@ func runAuthDoctor(cmd *cobra.Command, args []string) error {
 	checks := []check{}
 	bypass := bypassKeychain(cmd)
 
-	store, err := authstore.Open(bypass)
+	resolved, err := cliutil.ResolveCreds(cmd)
 	if err != nil {
-		checks = append(checks, check{name: "credential store", ok: false, msg: err.Error(), hint: "if no keychain is available, retry with --bypass-keychain"})
+		store := "keychain"
+		if bypass {
+			store = "file (~/.revcat/config.json)"
+		}
+		checks = append(checks, check{name: "credential resolve", ok: false, msg: err.Error(), hint: "checked: REVCAT_REFRESH_TOKEN env, walked-up .revcat/config.json, " + store + " (active profile). run `revcat auth login`."})
 		return renderChecks(checks)
 	}
-	storeName := "keychain"
-	if bypass {
-		storeName = "local file"
+	checks = append(checks, check{name: "credential resolve", ok: true, msg: fmt.Sprintf("source=%s profile=%s", resolved.Source, resolved.Profile.Name)})
+	if resolved.Path != "" {
+		checks = append(checks, check{name: "credential path", ok: true, msg: resolved.Path})
 	}
-	checks = append(checks, check{name: "credential store", ok: true, msg: storeName + " accessible"})
 
-	profile, err := authstore.Resolve(store, cliutil.Profile(cmd))
+	client, _, err := cliutil.Client(cmd)
 	if err != nil {
-		checks = append(checks, check{name: "active profile", ok: false, msg: err.Error(), hint: "run `revcat auth login --name default --secret-key sk_...`"})
+		checks = append(checks, check{name: "client build", ok: false, msg: err.Error()})
 		return renderChecks(checks)
 	}
-	checks = append(checks, check{name: "active profile", ok: true, msg: profile.Name})
 
-	authType := profile.EffectiveAuthType()
-	checks = append(checks, check{name: "auth type", ok: true, msg: string(authType)})
-
-	resolvedProject := cliutil.ResolveProjectID(cmd, profile)
-	opts := api.Options{ProjectID: resolvedProject, Version: cmd.Root().Version}
-	switch authType {
-	case authstore.AuthTypeOAuth:
-		if profile.AccessToken == "" {
-			checks = append(checks, check{name: "oauth token", ok: false, msg: "no access_token on profile", hint: "rerun `revcat auth login --oauth`"})
-		} else {
-			checks = append(checks, check{name: "oauth token", ok: true, msg: "present"})
-		}
-		opts.TokenSource = authstore.NewOAuthTokenSource(store, profile)
-	default:
-		if !strings.HasPrefix(profile.SecretKey, "sk_") {
-			checks = append(checks, check{name: "key format", ok: false, msg: "stored key does not start with sk_", hint: "v2 secret keys begin with sk_; double-check it isn't a public SDK key"})
-		} else {
-			checks = append(checks, check{name: "key format", ok: true, msg: "looks like a v2 secret key"})
-		}
-		opts.SecretKey = profile.SecretKey
-	}
-
-	client := api.New(opts)
 	ctx, cancel := context.WithTimeout(cmd.Context(), 10*time.Second)
 	defer cancel()
 	projects, apiErr := client.ListProjects(ctx)
 	if apiErr != nil {
 		checks = append(checks, check{name: "API reach", ok: false, msg: apiErr.Error(), hint: "is the network up? check VPN/proxy. set REVCAT_DEBUG=api for full request log"})
-	} else {
-		checks = append(checks, check{name: "API reach", ok: true, msg: fmt.Sprintf("ok, %d project access", len(projects))})
+		return renderChecks(checks)
+	}
+	checks = append(checks, check{name: "API reach", ok: true, msg: fmt.Sprintf("ok, %d project access", len(projects))})
 
-		if resolvedProject == "" {
-			checks = append(checks, check{name: "project context", ok: false, msg: "no project_id resolved", hint: "run `revcat init` in your repo, pass --project-id, or set REVCAT_PROJECT_ID"})
-		} else {
-			found := false
-			for _, p := range projects {
-				if p.ID == resolvedProject {
-					found = true
-					break
-				}
+	resolvedProject := cliutil.ResolveProjectID(cmd, resolved)
+	if resolvedProject == "" {
+		checks = append(checks, check{name: "project context", ok: false, msg: "no project_id resolved", hint: "run `revcat init` in your repo, pass --project-id, or set REVCAT_PROJECT_ID"})
+	} else {
+		found := false
+		for _, p := range projects {
+			if p.ID == resolvedProject {
+				found = true
+				break
 			}
-			if !found {
-				checks = append(checks, check{name: "project context", ok: false, msg: resolvedProject + " not accessible to this profile", hint: "the project may have been moved or your auth profile lacks access"})
-			} else {
-				checks = append(checks, check{name: "project context", ok: true, msg: resolvedProject})
+		}
+		if !found {
+			checks = append(checks, check{name: "project context", ok: false, msg: resolvedProject + " not accessible to this credential", hint: "the project may have been moved or this credential lacks access"})
+		} else {
+			checks = append(checks, check{name: "project context", ok: true, msg: resolvedProject})
+		}
+	}
+
+	// Mismatch detector: revcat.toml is committed and meant to declare
+	// which project the repo belongs to; .revcat/config.json (loaded
+	// via SourceLocal) is the gitignored credential half. They should
+	// agree. Disagreement means someone init'd a different project, or
+	// edited the toml without rerunning init.
+	if resolved.Source == authstore.SourceLocal {
+		if cfg, err := project.LoadFromCwd(); err == nil && cfg.ProjectID != "" {
+			if cfg.ProjectID != resolved.ProjectID {
+				checks = append(checks, check{
+					name: "toml/local mismatch",
+					ok:   false,
+					msg:  fmt.Sprintf("revcat.toml says %s, .revcat/config.json says %s", cfg.ProjectID, resolved.ProjectID),
+					hint: "rerun `revcat init --force` to realign, or edit revcat.toml to match",
+				})
 			}
 		}
 	}
@@ -122,6 +119,7 @@ func renderChecks(checks []check) error {
 		return err
 	}
 	if !allOK {
+		_ = authstore.GetActive
 		return fmt.Errorf("one or more checks failed")
 	}
 	return nil

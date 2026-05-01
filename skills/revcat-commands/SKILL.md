@@ -17,12 +17,7 @@ Conventions:
 ## auth
 
 ```sh
-# Recommended: pipe the key in via stdin so it never lands in shell history.
-echo $RC_KEY | revcat auth login --name my-app --secret-key-stdin [--project-id proj_xxx] [--no-verify]
-
-# Inline (key visible in shell history; OK for local exploration, avoid in production/CI):
-revcat auth login --name my-app --secret-key sk_xxx [--project-id proj_xxx] [--no-verify]
-
+revcat auth login [--name my-app] [--client-id <id>]   # browser OAuth, only mode
 revcat auth status [--validate]
 revcat auth doctor
 revcat auth use <name>
@@ -30,11 +25,22 @@ revcat auth list
 revcat auth logout [<name>] [--all] [-y]
 ```
 
+## init
+
+```sh
+revcat init                                    # interactive: pick project + apps
+revcat init --project-id proj_xxx --no-apps    # scripted
+revcat init --force                            # overwrite existing files
+revcat init --no-local-creds                   # write only revcat.toml, skip .revcat/config.json
+```
+
+Writes `revcat.toml` (committed: project_id + apps) and `.revcat/config.json` (gitignored, mode 0600: credentials + project_id + apps). Auto-appends `.revcat/` to `.gitignore`.
+
 ## projects, apps
 
 ```sh
 revcat projects list
-revcat projects view [<id>]                   # default: active profile's project
+revcat projects view [<id>]                   # default: resolved project
 
 revcat apps list
 revcat apps view <app_id>

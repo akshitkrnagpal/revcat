@@ -3,19 +3,29 @@ title: Quickstart
 description: Sign in and run your first command in 60 seconds.
 ---
 
-## 1. Get a v2 secret key
-
-In the RevenueCat dashboard, open your project and create a new **Secret API key** (v2). Copy it - it starts with `sk_`.
-
-## 2. Sign in
+## 1. Sign in
 
 ```sh
-revcat auth login --name my-app --secret-key sk_xxx
+revcat auth login
 ```
 
-revcat verifies the key, lists the projects it can reach, and stores the credentials in your OS keychain. If your key has access to more than one project, it will prompt you to pick one.
+revcat opens your browser for the OAuth flow, you authorize against RevenueCat, and the tokens land in your OS keychain.
 
-For CI / Docker without a keychain, pass `--bypass-keychain` (or set `REVCAT_BYPASS_KEYCHAIN=1`) to write to `./.revcat/config.json` instead. A `.gitignore` is created on first write.
+For Linux containers without secret-service, pass `--bypass-keychain` (or set `REVCAT_BYPASS_KEYCHAIN=1`) to write to `~/.revcat/config.json` instead.
+
+## 2. Bind a project to your repo
+
+```sh
+cd ~/your-repo
+revcat init
+```
+
+`revcat init` lists projects you can access, prompts for one (and optionally apps), then writes:
+
+- `revcat.toml` (committed): records `project_id` + apps so a `git clone` documents which RC project this repo belongs to.
+- `.revcat/config.json` (gitignored, mode 0600): copies your credential into the directory so subsequent commands and any agent or sandbox in the directory inherit it without keychain access.
+
+`.revcat/` is auto-appended to `.gitignore`.
 
 ## 3. Verify
 
@@ -24,38 +34,42 @@ revcat auth doctor
 revcat doctor
 ```
 
-Both should report `OK` for every check. If something fails, the doctor commands tell you what to fix.
+Both should report `OK` for every check.
 
 ## 4. Run your first command
 
-Inspect a customer:
-
-```sh
-revcat subscribers info app_user_123
-```
-
-Show your headline numbers:
+Inside the repo, project context is automatic:
 
 ```sh
 revcat metrics overview
-```
-
-Promote an offering with a fresh paywall:
-
-```sh
+revcat subscribers info app_user_123
 revcat publish offering pro --paywall ./paywalls/pro.json
 ```
 
-## Multiple profiles
+## Multiple accounts
 
-Have a dev / staging / prod project? Log in to each with a different `--name` and switch:
+Juggling several RC accounts? Log in to each with a different `--name` and switch:
 
 ```sh
-revcat auth login --name dev      --secret-key sk_dev_xxx
-revcat auth login --name prod     --secret-key sk_prod_xxx
-revcat auth use prod
-revcat --profile dev subscribers info app_user_123   # one-shot override
+revcat auth login --name work
+revcat auth login --name personal
+revcat auth use personal                 # default for global commands
+revcat --profile work auth status        # one-shot override
 ```
+
+When you `revcat init` inside a repo, it copies whichever profile is active at that moment. If you need to switch credentials for an existing repo, rerun `revcat init --force`.
+
+## Headless / CI
+
+For fresh sandboxes with no browser:
+
+```sh
+export REVCAT_REFRESH_TOKEN=rtk_...
+export REVCAT_PROJECT_ID=proj_...
+revcat offerings list
+```
+
+revcat synthesizes a virtual profile, refreshes tokens in-memory, and skips both keychain and login flow. Pull the refresh token from your CI secret manager.
 
 ## Where to go next
 

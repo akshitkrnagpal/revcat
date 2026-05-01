@@ -1,7 +1,19 @@
 // Package initcmd implements `revcat init` - the per-repo project
-// context bootstrap. Writes a revcat.toml at the cwd that pins the
-// project_id so subsequent commands run in the right RC project without
-// the user having to remember.
+// context bootstrap.
+//
+// Writes two files at cwd:
+//
+//   - revcat.toml (committed): project_id + optional apps. Useful for
+//     human readers and so a fresh clone shows which RC project this
+//     repo belongs to.
+//
+//   - .revcat/config.json (gitignored, mode 0600): credential half plus
+//     project_id and apps. Walked up from cwd by every revcat command
+//     so an agent inside the directory can run without touching the
+//     user's keychain.
+//
+// Also appends ".revcat/" to .gitignore (idempotent), creating it if
+// missing.
 package initcmd
 
 import (
@@ -17,39 +29,48 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/akshitkrnagpal/revcat/internal/api"
+	authstore "github.com/akshitkrnagpal/revcat/internal/auth"
 	"github.com/akshitkrnagpal/revcat/internal/cliutil"
 	"github.com/akshitkrnagpal/revcat/internal/output"
 	"github.com/akshitkrnagpal/revcat/internal/project"
 )
 
 var (
-	flagAppIDs []string
-	flagForce  bool
-	flagPath   string
-	flagNoApps bool
+	flagAppIDs       []string
+	flagForce        bool
+	flagPath         string
+	flagNoApps       bool
+	flagNoLocalCreds bool
 )
 
 // Cmd is the cobra command exported to the root.
 var Cmd = &cobra.Command{
 	Use:   "init",
-	Short: "Bootstrap revcat.toml in the current directory",
-	Long: `Write a revcat.toml at the current directory pinning the project_id
-(and optional apps). Once present, every command run from this repo
-inherits the binding without --project-id.
+	Short: "Bootstrap project context (revcat.toml + .revcat/config.json)",
+	Long: `Bind the current directory to a RevenueCat project. Writes:
+
+  - revcat.toml    (committed): project_id + optional apps
+  - .revcat/config.json (gitignored, mode 0600): credentials + project_id
+
+After init, every command run inside this directory inherits the project
+context. Agents and sandboxes that have access to the directory can run
+revcat without touching the user's keychain.
 
 Interactive (default): lists projects you can access, prompts for one,
 then optionally lists apps in that project and lets you tag them.
 
 Scripted: pass --project-id (and optional --app-id, repeated). Skip the
-apps block entirely with --no-apps.`,
+apps block entirely with --no-apps. Skip the local creds copy with
+--no-local-creds (writes only revcat.toml).`,
 	RunE: runInit,
 }
 
 func init() {
 	Cmd.Flags().StringSliceVar(&flagAppIDs, "app-id", nil, "App ids to record (repeatable)")
-	Cmd.Flags().BoolVar(&flagForce, "force", false, "Overwrite an existing revcat.toml")
-	Cmd.Flags().StringVar(&flagPath, "path", "", "Where to write revcat.toml (default: cwd)")
+	Cmd.Flags().BoolVar(&flagForce, "force", false, "Overwrite an existing revcat.toml or .revcat/config.json")
+	Cmd.Flags().StringVar(&flagPath, "path", "", "Where to write files (default: cwd)")
 	Cmd.Flags().BoolVar(&flagNoApps, "no-apps", false, "Skip the apps section entirely")
+	Cmd.Flags().BoolVar(&flagNoLocalCreds, "no-local-creds", false, "Don't write .revcat/config.json (only revcat.toml)")
 }
 
 func runInit(cmd *cobra.Command, args []string) error {
@@ -61,12 +82,27 @@ func runInit(cmd *cobra.Command, args []string) error {
 		}
 		dir = cwd
 	}
-	target := filepath.Join(dir, project.FileName)
+	tomlTarget := filepath.Join(dir, project.FileName)
+	credsTarget := filepath.Join(dir, authstore.LocalConfigPath)
 
-	if _, err := os.Stat(target); err == nil && !flagForce {
-		return fmt.Errorf("%s already exists; pass --force to overwrite", target)
+	if _, err := os.Stat(tomlTarget); err == nil && !flagForce {
+		return fmt.Errorf("%s already exists; pass --force to overwrite", tomlTarget)
+	}
+	if !flagNoLocalCreds {
+		if _, err := os.Stat(credsTarget); err == nil && !flagForce {
+			return fmt.Errorf("%s already exists; pass --force to overwrite", credsTarget)
+		}
 	}
 
+	resolved, err := cliutil.ResolveCreds(cmd)
+	if err != nil {
+		return fmt.Errorf("init needs an authenticated profile: %w", err)
+	}
+	if resolved.Source == authstore.SourceLocal {
+		return errors.New("a .revcat/config.json already exists in this tree; pass --force to reinit")
+	}
+
+	// Build a client with whatever creds we have, no project bound yet.
 	client, _, err := cliutil.Client(cmd)
 	if err != nil {
 		return err
@@ -77,31 +113,61 @@ func runInit(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	cfg := &project.Config{ProjectID: projectID}
-
+	tomlCfg := &project.Config{ProjectID: projectID}
+	var apps []project.App
 	if !flagNoApps {
-		apps, err := pickApps(cmd.Context(), cmd, projectID)
+		apps, err = pickApps(cmd.Context(), cmd, projectID)
 		if err != nil {
 			return err
 		}
-		cfg.Apps = apps
+		tomlCfg.Apps = apps
 	}
 
-	if err := project.Save(target, cfg); err != nil {
-		return fmt.Errorf("write %s: %w", target, err)
+	if err := project.Save(tomlTarget, tomlCfg); err != nil {
+		return fmt.Errorf("write %s: %w", tomlTarget, err)
+	}
+	output.Success("wrote %s", tomlTarget)
+
+	if !flagNoLocalCreds {
+		localCfg := &authstore.LocalConfig{
+			ProjectID: projectID,
+			Profile:   *resolved.Profile,
+			Apps:      toLocalApps(apps),
+		}
+		if err := authstore.SaveLocal(credsTarget, localCfg); err != nil {
+			return fmt.Errorf("write %s: %w", credsTarget, err)
+		}
+		output.Success("wrote %s (mode 0600)", credsTarget)
+
+		added, err := authstore.EnsureGitignored(dir)
+		if err != nil {
+			output.Warn("could not update .gitignore: %v", err)
+		} else if added {
+			output.Info("appended `.revcat/` to .gitignore")
+		}
 	}
 
-	output.Success("wrote %s", target)
-	output.Info("  project_id: %s", cfg.ProjectID)
-	if len(cfg.Apps) > 0 {
-		ids := make([]string, len(cfg.Apps))
-		for i, a := range cfg.Apps {
+	output.Info("  project_id: %s", projectID)
+	if len(apps) > 0 {
+		ids := make([]string, len(apps))
+		for i, a := range apps {
 			ids[i] = a.ID
 		}
 		output.Info("  apps:       %s", strings.Join(ids, ", "))
 	}
-	output.Info("commit revcat.toml so collaborators get the same context")
+	output.Info("commit revcat.toml; do NOT commit .revcat/")
 	return nil
+}
+
+func toLocalApps(in []project.App) []authstore.LocalApp {
+	if len(in) == 0 {
+		return nil
+	}
+	out := make([]authstore.LocalApp, len(in))
+	for i, a := range in {
+		out[i] = authstore.LocalApp{ID: a.ID, Name: a.Name}
+	}
+	return out
 }
 
 func pickProjectID(parent context.Context, cmd *cobra.Command, client *api.Client) (string, error) {
@@ -146,9 +212,6 @@ func pickApps(parent context.Context, cmd *cobra.Command, projectID string) ([]p
 		}
 		return out, nil
 	}
-	// Re-bind the API client to the chosen project_id so /projects/{id}/apps
-	// hits the right path (the caller's client may have no project bound
-	// yet — there's no revcat.toml yet to resolve from).
 	scoped, _, err := cliutil.ClientForProject(cmd, projectID)
 	if err != nil {
 		return nil, err
@@ -158,8 +221,6 @@ func pickApps(parent context.Context, cmd *cobra.Command, projectID string) ([]p
 	defer cancel()
 	apps, err := scoped.ListApps(ctx)
 	if err != nil {
-		// Don't block init on app listing failure - the file is still
-		// useful with project_id alone.
 		output.Warn("could not list apps (%v); writing project_id only", err)
 		return nil, nil
 	}
