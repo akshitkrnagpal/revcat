@@ -23,7 +23,7 @@ Source of truth: <https://www.revenuecat.com/docs/api-v2>.
 | --- | --- |
 | `GET /projects` | `revcat projects list`, `revcat auth login` (picker) |
 | `GET /projects/{id}` | `revcat projects view` |
-| `POST /projects` | partner-tier only |
+| `POST /projects` | not in v2 REST (dashboard only) |
 
 ### Apps
 
@@ -33,7 +33,7 @@ Source of truth: <https://www.revenuecat.com/docs/api-v2>.
 | `GET /apps/{id}` | `revcat apps view` |
 | `GET /apps/{id}/public_api_keys` | `revcat apps public-keys` |
 | `GET /apps/{id}/store_kit_config` | `revcat apps storekit-config` |
-| `POST /apps`, `POST /apps/{id}`, `DELETE /apps/{id}` | partner-tier only |
+| `POST /apps`, `POST /apps/{id}`, `DELETE /apps/{id}` | not in v2 REST (dashboard only) |
 
 ### Customers
 
@@ -186,7 +186,9 @@ Source of truth: <https://www.revenuecat.com/docs/api-v2>.
 | `GET /charts/{name}` | `revcat charts get <name>` |
 | `GET /charts/{name}/options` | `revcat charts options <name>` |
 
-## Out of scope (partner-tier keys only)
+## Out of scope (not in v2 REST)
+
+The following endpoints have no v2 REST equivalent. Manage in the dashboard.
 
 - `POST /projects` - project create
 - App CRUD (`POST /apps`, `POST /apps/{id}`, `DELETE /apps/{id}`)
@@ -194,7 +196,7 @@ Source of truth: <https://www.revenuecat.com/docs/api-v2>.
 
 ## Not exposed by v2 REST
 
-These endpoints either return 404 across the v2 customer surface or are gated behind a higher-tier key. Smoke-tested 2026-04-25:
+These endpoints return 404 across the v2 customer surface. Smoke-tested 2026-04-25:
 
 - An events firehose. RC delivers lifecycle events (purchases, renewals, cancellations, refunds, ...) via webhooks. revcat covers webhook CRUD; subscribe your endpoint with `revcat webhooks create`.
 - `POST /customers/{id}/actions/override_offering`

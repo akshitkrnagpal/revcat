@@ -49,7 +49,7 @@ revcat is organized by RevenueCat resource: customers, offerings, paywalls, etc.
 
 ## Auth + housekeeping
 
-`auth` (login, status, doctor, use, list, logout), `doctor`, `completion`, `version`. See the individual pages for details.
+[`auth`](/commands/auth/) (login, status, doctor, use, list, logout), [`init`](/commands/init/), [`doctor`](/commands/doctor/), `completion`, `version`. See the individual pages for details.
 
 ## Global flags
 
@@ -57,8 +57,9 @@ Available on every command:
 
 | Flag | Description |
 | --- | --- |
-| `--profile <name>` | Auth profile to use (default: `REVCAT_PROFILE` env or `default`) |
-| `--bypass-keychain` | Read/write the active profile from `./.revcat/config.json` instead of the OS keychain |
+| `--profile <name>` | Global auth profile to use (default: `REVCAT_PROFILE` env or `default`). Ignored when a `.revcat/config.json` is walked up from cwd. |
+| `--project-id <id>` | RevenueCat project id (default: `REVCAT_PROJECT_ID`, walked-up `.revcat/config.json`, or `revcat.toml`) |
+| `--bypass-keychain` | Use `~/.revcat/config.json` (file backend) instead of the OS keychain |
 | `--output table\|json\|csv\|markdown` | Force an output format. Auto-detected when omitted (table on TTY, JSON when piped) |
 | `--pretty` | Indent JSON output |
 | `-v, --verbose` | Show detailed output |
