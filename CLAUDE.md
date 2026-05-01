@@ -12,19 +12,24 @@ The RevenueCat CLI. Go + cobra.
 ## Architecture
 
 - `cmd/revcat` - main() entrypoint, calls commands.Execute()
-- `commands/` - cobra commands organized by resource (auth, apps, ...)
-- `internal/api` - hand-rolled RC v2 REST client (no SDK exists)
-- `internal/auth` - keychain + local-file backends, profile resolver
+- `commands/` - cobra commands organized by resource (auth, init, apps, ...)
+- `internal/api` - hand-rolled RC v2 REST client (no SDK exists) + OAuth flow
+- `internal/auth` - keychain / global file / project-local credential stores + resolver
+- `internal/project` - revcat.toml loader (committed half of project context)
+- `internal/cliutil` - shared command helpers (Client, ResolveProjectID)
 - `internal/output` - TTY-aware renderer (table on TTY, JSON when piped)
 
 ## Auth
 
-Profiles in OS keychain by default. Override:
+OAuth-only since v0.4. Three credential storage tiers (resolution order):
 
-- `--bypass-keychain` or `REVCAT_BYPASS_KEYCHAIN=1` writes to `./.revcat/config.json`
-- `REVCAT_API_KEY` env synthesizes a one-shot profile (highest precedence)
-- `REVCAT_PROFILE` selects active profile when `--profile` is not set
-- `REVCAT_PROJECT_ID` overrides stored project id
+1. `REVCAT_REFRESH_TOKEN` env (synthesizes a virtual profile, in-memory only)
+2. Walked-up `./.revcat/config.json` (written by `revcat init`, gitignored, mode 0600)
+3. Global keychain (default) or `~/.revcat/config.json` with `--bypass-keychain` / `REVCAT_BYPASS_KEYCHAIN=1`
+
+Within tier 3, the active profile name is `--profile` flag > `REVCAT_PROFILE` env > `~/.revcat/active` > `default`.
+
+Project id resolution: `--project-id` flag > `REVCAT_PROJECT_ID` env > resolved credential's bound project (local config or env hatch) > walked-up `revcat.toml`.
 
 ## Style
 

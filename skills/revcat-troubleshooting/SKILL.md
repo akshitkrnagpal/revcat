@@ -1,6 +1,6 @@
 ---
 name: revcat-troubleshooting
-description: Use when a revcat command fails or shows an error. Common errors: 401 unauthorized, no profile, no project_id, 404 customer/subscription, partner-tier endpoints, paywall PUT failures, ndjson parsing, Test Store quirks, v1-only endpoints, dashboard-only operations. Triggers on revcat error output, "revcat doesn't work", "command not supported", "atob error", "endpoint missing".
+description: Use when a revcat command fails or shows an error. Common errors: 401 unauthorized, no profile, no project_id, 404 customer/subscription, dashboard-only endpoints, paywall PUT failures, ndjson parsing, Test Store quirks, v1-only endpoints, v0.3-to-v0.4 upgrade paths, toml/local mismatch. Triggers on revcat error output, "revcat doesn't work", "command not supported", "atob error", "endpoint missing".
 ---
 
 # revcat - troubleshooting
