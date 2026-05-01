@@ -105,7 +105,24 @@ func Resolve(opts ResolveOptions) (*Resolved, error) {
 	name := ResolveProfileName(opts.FlagProfile)
 	prof, err := store.Get(name)
 	if err != nil {
-		return nil, err
+		// Self-heal: if the active marker (set by `auth use <foo>`)
+		// points to a profile that no longer exists, fall through
+		// to "default" rather than make every subsequent command
+		// fail with ErrNoProfile.
+		if errors.Is(err, ErrNoProfile) && opts.FlagProfile == "" && os.Getenv(envProfile) == "" {
+			active, _ := GetActive()
+			if active == name && active != defaultProfile {
+				if alt, gerr := store.Get(defaultProfile); gerr == nil {
+					_ = ClearActive()
+					prof = alt
+					name = defaultProfile
+					err = nil
+				}
+			}
+		}
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	source := SourceKeychain

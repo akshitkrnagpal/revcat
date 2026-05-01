@@ -71,3 +71,36 @@ func TestDecodeProfile_AcceptsOAuthShape(t *testing.T) {
 		t.Fatalf("got %+v", p)
 	}
 }
+
+func TestResolve_SelfHealsStaleActiveMarker(t *testing.T) {
+	t.Setenv("REVCAT_REFRESH_TOKEN", "")
+	t.Setenv("REVCAT_PROFILE", "")
+	t.Setenv("HOME", t.TempDir())
+
+	// Set up a global file store with only "default", then point the
+	// active marker at "ghost" (a profile that no longer exists).
+	store, err := openGlobalFile()
+	if err != nil {
+		t.Fatalf("openGlobalFile: %v", err)
+	}
+	if err := store.Set(&Profile{Name: "default", AccessToken: "atk", RefreshToken: "rtk"}); err != nil {
+		t.Fatalf("Set: %v", err)
+	}
+	if err := SetActive("ghost"); err != nil {
+		t.Fatalf("SetActive: %v", err)
+	}
+
+	got, err := Resolve(ResolveOptions{Bypass: true, Cwd: t.TempDir()})
+	if err != nil {
+		t.Fatalf("Resolve: %v", err)
+	}
+	if got.Profile.Name != "default" {
+		t.Fatalf("expected fallback to default, got %q", got.Profile.Name)
+	}
+
+	// And the stale marker should be cleared so subsequent runs are
+	// fast paths.
+	if active, _ := GetActive(); active != "" {
+		t.Fatalf("expected active marker cleared, got %q", active)
+	}
+}

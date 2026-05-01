@@ -108,21 +108,35 @@ func ClientForProject(cmd *cobra.Command, projectIDOverride string) (*api.Client
 	if err != nil {
 		return nil, nil, err
 	}
+	client, err := ClientFromResolved(cmd, resolved, projectIDOverride)
+	if err != nil {
+		return nil, nil, err
+	}
+	return client, resolved, nil
+}
 
+// ClientFromResolved builds the API client from an already-resolved
+// credential. Lets long-running commands (init, doctor) avoid re-running
+// Resolve when they already hold one - each Resolve call re-opens the
+// global store, which is cheap on a real keychain but re-prompts the
+// file-backed keyring for its passphrase.
+func ClientFromResolved(cmd *cobra.Command, resolved *authstore.Resolved, projectIDOverride string) (*api.Client, error) {
 	pid := projectIDOverride
 	if pid == "" {
 		pid = ResolveProjectID(cmd, resolved)
 	}
 
 	// For SourceKeychain / SourceGlobalFile the OAuthTokenSource
-	// needs a store handle to persist refreshed tokens back. Open
-	// the matching store; cheap.
+	// needs a store handle to persist refreshed tokens back. The
+	// passphrase prompt is cached per-process so this is free-ish
+	// after the first open.
 	var store authstore.GlobalStore
+	var err error
 	switch resolved.Source {
 	case authstore.SourceKeychain, authstore.SourceGlobalFile:
 		store, err = authstore.OpenGlobal(BypassKeychain(cmd))
 		if err != nil {
-			return nil, nil, fmt.Errorf("reopen global store for refresh: %w", err)
+			return nil, fmt.Errorf("reopen global store for refresh: %w", err)
 		}
 	}
 
@@ -131,5 +145,5 @@ func ClientForProject(cmd *cobra.Command, projectIDOverride string) (*api.Client
 		Version:     cmd.Root().Version,
 		TokenSource: authstore.NewOAuthTokenSource(resolved, store),
 	}
-	return api.New(opts), resolved, nil
+	return api.New(opts), nil
 }
