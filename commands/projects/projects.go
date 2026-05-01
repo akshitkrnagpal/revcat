@@ -61,7 +61,7 @@ var viewCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		id := prof.ProjectID
+		id := cliutil.ResolveProjectID(cmd, prof)
 		if len(args) == 1 {
 			id = args[0]
 		}

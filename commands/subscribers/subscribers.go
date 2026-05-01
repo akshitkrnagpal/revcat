@@ -16,21 +16,3 @@ entitlements, subscriptions, purchases, and aliases in a single card.`,
 func init() {
 	Cmd.AddCommand(infoCmd)
 }
-
-// bypassKeychain reads the global flag from the cobra root.
-func bypassKeychain(cmd *cobra.Command) bool {
-	flag := cmd.Root().PersistentFlags().Lookup("bypass-keychain")
-	if flag == nil {
-		return false
-	}
-	return flag.Value.String() == "true"
-}
-
-// profile reads the global --profile flag.
-func profile(cmd *cobra.Command) string {
-	flag := cmd.Root().PersistentFlags().Lookup("profile")
-	if flag == nil {
-		return ""
-	}
-	return flag.Value.String()
-}

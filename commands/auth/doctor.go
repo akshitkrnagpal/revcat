@@ -54,7 +54,8 @@ func runAuthDoctor(cmd *cobra.Command, args []string) error {
 	authType := profile.EffectiveAuthType()
 	checks = append(checks, check{name: "auth type", ok: true, msg: string(authType)})
 
-	opts := api.Options{ProjectID: profile.ProjectID, Version: cmd.Root().Version}
+	resolvedProject := cliutil.ResolveProjectID(cmd, profile)
+	opts := api.Options{ProjectID: resolvedProject, Version: cmd.Root().Version}
 	switch authType {
 	case authstore.AuthTypeOAuth:
 		if profile.AccessToken == "" {
@@ -81,20 +82,20 @@ func runAuthDoctor(cmd *cobra.Command, args []string) error {
 	} else {
 		checks = append(checks, check{name: "API reach", ok: true, msg: fmt.Sprintf("ok, %d project access", len(projects))})
 
-		if profile.ProjectID == "" {
-			checks = append(checks, check{name: "project binding", ok: false, msg: "no project_id stored on profile", hint: "rerun `revcat auth login` and pick a project"})
+		if resolvedProject == "" {
+			checks = append(checks, check{name: "project context", ok: false, msg: "no project_id resolved", hint: "run `revcat init` in your repo, pass --project-id, or set REVCAT_PROJECT_ID"})
 		} else {
 			found := false
 			for _, p := range projects {
-				if p.ID == profile.ProjectID {
+				if p.ID == resolvedProject {
 					found = true
 					break
 				}
 			}
 			if !found {
-				checks = append(checks, check{name: "project binding", ok: false, msg: profile.ProjectID + " not in this key's project list", hint: "the key may have been rotated to a different project; rerun `revcat auth login`"})
+				checks = append(checks, check{name: "project context", ok: false, msg: resolvedProject + " not accessible to this profile", hint: "the project may have been moved or your auth profile lacks access"})
 			} else {
-				checks = append(checks, check{name: "project binding", ok: true, msg: profile.ProjectID})
+				checks = append(checks, check{name: "project context", ok: true, msg: resolvedProject})
 			}
 		}
 	}

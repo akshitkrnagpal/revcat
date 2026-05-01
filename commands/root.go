@@ -9,6 +9,7 @@ import (
 	authcmd "github.com/akshitkrnagpal/revcat/commands/auth"
 	doctorcmd "github.com/akshitkrnagpal/revcat/commands/doctor"
 	entitlementscmd "github.com/akshitkrnagpal/revcat/commands/entitlements"
+	initcmd "github.com/akshitkrnagpal/revcat/commands/initcmd"
 	invoicescmd "github.com/akshitkrnagpal/revcat/commands/invoices"
 	metricscmd "github.com/akshitkrnagpal/revcat/commands/metrics"
 	offeringscmd "github.com/akshitkrnagpal/revcat/commands/offerings"
@@ -39,6 +40,7 @@ type globalFlags struct {
 	Output         string
 	Pretty         bool
 	Profile        string
+	ProjectID      string
 	BypassKeychain bool
 }
 
@@ -81,6 +83,7 @@ func init() {
 	pf.StringVar(&Flags.Output, "output", "", "Output format: table | json | csv | markdown (auto-detect when empty)")
 	pf.BoolVar(&Flags.Pretty, "pretty", false, "Pretty-print JSON output")
 	pf.StringVar(&Flags.Profile, "profile", "", "Auth profile name (default: REVCAT_PROFILE or 'default')")
+	pf.StringVar(&Flags.ProjectID, "project-id", "", "RevenueCat project id (default: REVCAT_PROJECT_ID, ./revcat.toml, or the bound profile)")
 	pf.BoolVar(&Flags.BypassKeychain, "bypass-keychain", false, "Read/write auth from ./.revcat/config.json instead of OS keychain")
 
 	rootCmd.AddCommand(appscmd.Cmd)
@@ -88,6 +91,7 @@ func init() {
 	rootCmd.AddCommand(authcmd.Cmd)
 	rootCmd.AddCommand(doctorcmd.Cmd)
 	rootCmd.AddCommand(entitlementscmd.Cmd)
+	rootCmd.AddCommand(initcmd.Cmd)
 	rootCmd.AddCommand(invoicescmd.Cmd)
 	rootCmd.AddCommand(metricscmd.Cmd)
 	rootCmd.AddCommand(metricscmd.ChartsCmd)

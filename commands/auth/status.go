@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -11,6 +12,7 @@ import (
 	authstore "github.com/akshitkrnagpal/revcat/internal/auth"
 	"github.com/akshitkrnagpal/revcat/internal/cliutil"
 	"github.com/akshitkrnagpal/revcat/internal/output"
+	"github.com/akshitkrnagpal/revcat/internal/project"
 )
 
 var (
@@ -67,10 +69,12 @@ func runStatus(cmd *cobra.Command, args []string) error {
 	} else {
 		rows = append(rows, []any{"secret_key", redactKey(profile.SecretKey)})
 	}
-	rows = append(rows, []any{"project_id", emptyDash(profile.ProjectID)})
+	resolvedProject := cliutil.ResolveProjectID(cmd, profile)
+	rows = append(rows, []any{"project_id", emptyDash(resolvedProject)})
+	rows = append(rows, []any{"project_source", projectSource(cmd, profile)})
 
 	if statusValidate {
-		opts := api.Options{ProjectID: profile.ProjectID, Version: cmd.Root().Version}
+		opts := api.Options{ProjectID: resolvedProject, Version: cmd.Root().Version}
 		if profile.EffectiveAuthType() == authstore.AuthTypeOAuth {
 			opts.TokenSource = authstore.NewOAuthTokenSource(store, profile)
 		} else {
@@ -91,6 +95,24 @@ func runStatus(cmd *cobra.Command, args []string) error {
 	}
 
 	return output.Table([]string{"field", "value"}, rows)
+}
+
+// projectSource explains where the resolved project_id came from so the
+// user can debug "why am I hitting the wrong project?".
+func projectSource(cmd *cobra.Command, p *authstore.Profile) string {
+	if v := cliutil.ProjectIDFlag(cmd); v != "" {
+		return "--project-id flag"
+	}
+	if v := os.Getenv("REVCAT_PROJECT_ID"); v != "" {
+		return "REVCAT_PROJECT_ID env"
+	}
+	if cfg, err := project.LoadFromCwd(); err == nil && cfg.ProjectID != "" {
+		return cfg.Path
+	}
+	if p != nil && p.ProjectID != "" {
+		return "profile binding"
+	}
+	return "-"
 }
 
 func expiresLine(ms int64) string {

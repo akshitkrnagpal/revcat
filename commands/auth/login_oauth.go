@@ -88,7 +88,6 @@ func runOAuthLogin(cmd *cobra.Command) error {
 	profile := &authstore.Profile{
 		Name:         loginName,
 		AuthType:     authstore.AuthTypeOAuth,
-		ProjectID:    loginProjectID,
 		AccessToken:  tok.AccessToken,
 		RefreshToken: tok.RefreshToken,
 		ExpiresAt:    expiresAt,
@@ -99,21 +98,12 @@ func runOAuthLogin(cmd *cobra.Command) error {
 	if !loginNoVerify {
 		client := api.New(api.Options{
 			TokenSource: authstore.NewOAuthTokenSource(store, profile),
-			ProjectID:   profile.ProjectID,
 			Version:     cmd.Root().Version,
 		})
 		vctx, vcancel := context.WithTimeout(cmd.Context(), 10*time.Second)
 		defer vcancel()
-		projects, err := client.ListProjects(vctx)
-		if err != nil {
+		if _, err := client.ListProjects(vctx); err != nil {
 			return fmt.Errorf("verify access: %w", err)
-		}
-		if profile.ProjectID == "" && len(projects) > 0 {
-			id, err := pickProject(projects)
-			if err != nil {
-				return err
-			}
-			profile.ProjectID = id
 		}
 	}
 
@@ -126,11 +116,9 @@ func runOAuthLogin(cmd *cobra.Command) error {
 		loc = "./.revcat/config.json"
 	}
 	output.Success("oauth login saved as %q in %s", loginName, loc)
-	if profile.ProjectID != "" {
-		output.Info("  project_id: %s", profile.ProjectID)
-	}
 	output.Info("  expires:    %s", time.UnixMilli(profile.ExpiresAt).Local().Format("2006-01-02 15:04 MST"))
 	output.Info("  scope:      %s", profile.Scope)
+	output.Info("next: cd into your repo and run `revcat init` to bind a project_id")
 	output.Info("  use it: revcat --profile %s ...", loginName)
 	return nil
 }

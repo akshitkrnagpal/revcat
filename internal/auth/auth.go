@@ -31,9 +31,6 @@ const envBypassKeychain = "REVCAT_BYPASS_KEYCHAIN"
 // envProfile picks the active profile when --profile is not set.
 const envProfile = "REVCAT_PROFILE"
 
-// envProjectID lets a script override the stored project id.
-const envProjectID = "REVCAT_PROJECT_ID"
-
 const defaultProfile = "default"
 
 // AuthType discriminates between the two credential models a profile
@@ -108,7 +105,6 @@ func Resolve(store Store, flagProfile string) (*Profile, error) {
 		return &Profile{
 			Name:      "$" + envKeyOverride,
 			SecretKey: key,
-			ProjectID: os.Getenv(envProjectID),
 		}, nil
 	}
 	name := flagProfile
@@ -126,9 +122,6 @@ func Resolve(store Store, flagProfile string) (*Profile, error) {
 	p, err := store.Get(name)
 	if err != nil {
 		return nil, err
-	}
-	if pid := os.Getenv(envProjectID); pid != "" {
-		p.ProjectID = pid
 	}
 	return p, nil
 }
