@@ -2,6 +2,37 @@
 
 Notable changes per release. Dates are UTC.
 
+## [v0.4.0-alpha.1](https://github.com/akshitkrnagpal/revcat/releases/tag/v0.4.0-alpha.1) - 2026-05-01
+
+OAuth (PKCE) login as an alternative to v2 secret keys, plus a per-repo `revcat.toml` that pins project context Terraform-style. Alpha for early feedback before v0.4.0 final.
+
+### Added
+
+- `revcat auth login --oauth` runs the PKCE flow against the public RevenueCat OAuth client (`UmV2Q2F0`). Opens the browser, captures the redirect on a loopback port, exchanges the code, stores tokens on a profile. Override the client with `REVCAT_OAUTH_CLIENT_ID` or `-ldflags '-X .../auth.EmbeddedClientID=<id>'`. Auto-refreshes via a `TokenSource` on the API client; mutex-guarded so concurrent commands don't double-refresh, with a 60s skew before expiry.
+- New `revcat init` writes `revcat.toml` at the current directory pinning the active `project_id` (and optional apps[]). Walked up from cwd like `.git` / `go.mod`, so any command run inside the repo inherits the project automatically. Interactive (lists projects, optional app multi-select) or scripted (`--project-id`, `--app-id`, `--no-apps`, `--force`).
+- New global `--project-id` flag and `REVCAT_PROJECT_ID` env. Resolution order: `--project-id` > env > `revcat.toml` > profile binding. The legacy fallback keeps existing secret-key profiles working unchanged.
+- `revcat auth status` now shows `auth_type`, `project_id`, and a new `project_source` row pointing at the `revcat.toml` path / env / flag / profile so you can debug "why did it hit the wrong project?".
+- `revcat auth list` shows a new `auth_type` column and redacts OAuth access tokens.
+- `revcat auth doctor` and `revcat doctor` rewrite their project-binding check in terms of the resolved project context.
+
+### Changed
+
+- OAuth profiles save credentials only (no `project_id` binding). Switching projects no longer requires re-logging in. Existing secret-key profiles still bind a project at login time for backward compatibility.
+- `internal/api.Client` accepts a `TokenSource` so OAuth and secret-key auth share one transport.
+- `internal/cliutil.Client` now resolves project_id via the new precedence chain. Every command that builds clients through cliutil picks up the new behavior automatically.
+
+### Internal
+
+- New `internal/oauth` flow split across `internal/api/oauth.go` (PKCE pair, AuthorizeURL builder, ExchangeCode, RefreshToken, loopback server, browser opener) and `internal/auth/oauth.go` (refreshing TokenSource backed by the credential store).
+- New `internal/project` package: TOML loader (BurntSushi/toml), walk-up lookup, atomic Save.
+- New `internal/cliutil.ResolveProjectID` and `cliutil.ClientForProject` helpers.
+- Tests: PKCE S256 challenge correctness, AuthorizeURL shape, ExchangeCode/RefreshToken form encoding, error-body surfacing, loopback callback capture, project-config walk-up + roundtrip, full ResolveProjectID precedence chain.
+
+### Migration notes
+
+- Existing secret-key profiles deserialize unchanged; `auth_type` defaults to `secret_key` when missing.
+- After upgrading: existing OAuth profiles created during the alpha may carry a stale `project_id` from earlier iterations. Re-login via `revcat auth login --oauth --name <profile>` to drop it, then `cd` into your repo and run `revcat init`.
+
 ## [v0.3.0](https://github.com/akshitkrnagpal/revcat/releases/tag/v0.3.0) - 2026-04-29
 
 Security audit pass. Five findings ranging from a transitive CVE down to inconsistent URL escaping, all addressed before the OAuth public-client work lands. `govulncheck ./...` now reports clean.
