@@ -11,18 +11,31 @@ For CI, pass `--bypass-keychain` (or set `REVCAT_BYPASS_KEYCHAIN=1`) to use a lo
 
 | Command | Description |
 | --- | --- |
-| `auth login` | Save a RevenueCat secret key as a named profile |
+| `auth login` | Save credentials as a named profile (secret key or OAuth) |
 | `auth status` | Show the active auth profile (`--validate` hits the API) |
 | `auth doctor` | Self-diagnose auth setup |
 | `auth use <name>` | Set the default auth profile |
 | `auth list` | List stored auth profiles |
 | `auth logout [name]` | Remove a stored auth profile (`--all` wipes them all) |
 
+## Auth modes
+
+revcat supports two credential models, both stored in the OS keychain:
+
+1. **v2 secret key** (default). Pass `--secret-key sk_...`. Simple and scriptable.
+2. **OAuth (PKCE)**. Pass `--oauth`. revcat opens your browser, you authorize against RevenueCat, the access + refresh tokens land on the profile. Tokens auto-refresh on each command. Requires a registered OAuth `client_id` (set `REVCAT_OAUTH_CLIENT_ID` or pass `--client-id`).
+
 ## Examples
 
 ```sh
+# secret key
 revcat auth login --name my-app --secret-key sk_xxx
 revcat auth login --name my-app --secret-key sk_xxx --project-id proj_xxx --no-verify   # CI
+
+# oauth (requires a registered client_id)
+revcat auth login --oauth --name my-app
+REVCAT_OAUTH_CLIENT_ID=<id> revcat auth login --oauth --name my-app
+
 revcat auth status --validate
 revcat auth doctor
 revcat auth use my-app

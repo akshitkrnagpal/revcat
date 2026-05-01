@@ -10,6 +10,7 @@ import (
 
 	"github.com/akshitkrnagpal/revcat/internal/api"
 	authstore "github.com/akshitkrnagpal/revcat/internal/auth"
+	"github.com/akshitkrnagpal/revcat/internal/cliutil"
 	"github.com/akshitkrnagpal/revcat/internal/output"
 )
 
@@ -43,20 +44,36 @@ func runAuthDoctor(cmd *cobra.Command, args []string) error {
 	}
 	checks = append(checks, check{name: "credential store", ok: true, msg: storeName + " accessible"})
 
-	profile, err := authstore.Resolve(store, "")
+	profile, err := authstore.Resolve(store, cliutil.Profile(cmd))
 	if err != nil {
 		checks = append(checks, check{name: "active profile", ok: false, msg: err.Error(), hint: "run `revcat auth login --name default --secret-key sk_...`"})
 		return renderChecks(checks)
 	}
 	checks = append(checks, check{name: "active profile", ok: true, msg: profile.Name})
 
-	if !strings.HasPrefix(profile.SecretKey, "sk_") {
-		checks = append(checks, check{name: "key format", ok: false, msg: "stored key does not start with sk_", hint: "v2 secret keys begin with sk_; double-check it isn't a public SDK key"})
-	} else {
-		checks = append(checks, check{name: "key format", ok: true, msg: "looks like a v2 secret key"})
+	authType := profile.EffectiveAuthType()
+	checks = append(checks, check{name: "auth type", ok: true, msg: string(authType)})
+
+	resolvedProject := cliutil.ResolveProjectID(cmd, profile)
+	opts := api.Options{ProjectID: resolvedProject, Version: cmd.Root().Version}
+	switch authType {
+	case authstore.AuthTypeOAuth:
+		if profile.AccessToken == "" {
+			checks = append(checks, check{name: "oauth token", ok: false, msg: "no access_token on profile", hint: "rerun `revcat auth login --oauth`"})
+		} else {
+			checks = append(checks, check{name: "oauth token", ok: true, msg: "present"})
+		}
+		opts.TokenSource = authstore.NewOAuthTokenSource(store, profile)
+	default:
+		if !strings.HasPrefix(profile.SecretKey, "sk_") {
+			checks = append(checks, check{name: "key format", ok: false, msg: "stored key does not start with sk_", hint: "v2 secret keys begin with sk_; double-check it isn't a public SDK key"})
+		} else {
+			checks = append(checks, check{name: "key format", ok: true, msg: "looks like a v2 secret key"})
+		}
+		opts.SecretKey = profile.SecretKey
 	}
 
-	client := api.New(api.Options{SecretKey: profile.SecretKey, ProjectID: profile.ProjectID, Version: cmd.Root().Version})
+	client := api.New(opts)
 	ctx, cancel := context.WithTimeout(cmd.Context(), 10*time.Second)
 	defer cancel()
 	projects, apiErr := client.ListProjects(ctx)
@@ -65,20 +82,20 @@ func runAuthDoctor(cmd *cobra.Command, args []string) error {
 	} else {
 		checks = append(checks, check{name: "API reach", ok: true, msg: fmt.Sprintf("ok, %d project access", len(projects))})
 
-		if profile.ProjectID == "" {
-			checks = append(checks, check{name: "project binding", ok: false, msg: "no project_id stored on profile", hint: "rerun `revcat auth login` and pick a project"})
+		if resolvedProject == "" {
+			checks = append(checks, check{name: "project context", ok: false, msg: "no project_id resolved", hint: "run `revcat init` in your repo, pass --project-id, or set REVCAT_PROJECT_ID"})
 		} else {
 			found := false
 			for _, p := range projects {
-				if p.ID == profile.ProjectID {
+				if p.ID == resolvedProject {
 					found = true
 					break
 				}
 			}
 			if !found {
-				checks = append(checks, check{name: "project binding", ok: false, msg: profile.ProjectID + " not in this key's project list", hint: "the key may have been rotated to a different project; rerun `revcat auth login`"})
+				checks = append(checks, check{name: "project context", ok: false, msg: resolvedProject + " not accessible to this profile", hint: "the project may have been moved or your auth profile lacks access"})
 			} else {
-				checks = append(checks, check{name: "project binding", ok: true, msg: profile.ProjectID})
+				checks = append(checks, check{name: "project context", ok: true, msg: resolvedProject})
 			}
 		}
 	}

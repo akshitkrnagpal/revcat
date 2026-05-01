@@ -34,7 +34,11 @@ func runList(cmd *cobra.Command, args []string) error {
 			rows = append(rows, []any{marker, n, "(unreadable)", ""})
 			continue
 		}
-		rows = append(rows, []any{marker, n, redactKey(p.SecretKey), emptyDash(p.ProjectID)})
+		credential := redactKey(p.SecretKey)
+		if p.EffectiveAuthType() == authstore.AuthTypeOAuth {
+			credential = "oauth:" + redactKey(p.AccessToken)
+		}
+		rows = append(rows, []any{marker, n, string(p.EffectiveAuthType()), credential, emptyDash(p.ProjectID)})
 	}
-	return output.Table([]string{"", "name", "secret_key", "project_id"}, rows)
+	return output.Table([]string{"", "name", "auth_type", "credential", "project_id"}, rows)
 }

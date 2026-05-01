@@ -3,13 +3,16 @@ package auth
 import (
 	"context"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/spf13/cobra"
 
 	"github.com/akshitkrnagpal/revcat/internal/api"
 	authstore "github.com/akshitkrnagpal/revcat/internal/auth"
+	"github.com/akshitkrnagpal/revcat/internal/cliutil"
 	"github.com/akshitkrnagpal/revcat/internal/output"
+	"github.com/akshitkrnagpal/revcat/internal/project"
 )
 
 var (
@@ -35,7 +38,11 @@ func runStatus(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	profile, err := authstore.Resolve(store, statusName)
+	name := statusName
+	if name == "" {
+		name = cliutil.Profile(cmd)
+	}
+	profile, err := authstore.Resolve(store, name)
 	if err != nil {
 		return err
 	}
@@ -51,12 +58,29 @@ func runStatus(cmd *cobra.Command, args []string) error {
 	rows := [][]any{
 		{"profile", profile.Name},
 		{"source", source},
-		{"secret_key", redactKey(profile.SecretKey)},
-		{"project_id", emptyDash(profile.ProjectID)},
+		{"auth_type", string(profile.EffectiveAuthType())},
 	}
+	if profile.EffectiveAuthType() == authstore.AuthTypeOAuth {
+		rows = append(rows,
+			[]any{"access_token", redactKey(profile.AccessToken)},
+			[]any{"expires", expiresLine(profile.ExpiresAt)},
+			[]any{"scope", emptyDash(profile.Scope)},
+		)
+	} else {
+		rows = append(rows, []any{"secret_key", redactKey(profile.SecretKey)})
+	}
+	resolvedProject := cliutil.ResolveProjectID(cmd, profile)
+	rows = append(rows, []any{"project_id", emptyDash(resolvedProject)})
+	rows = append(rows, []any{"project_source", projectSource(cmd, profile)})
 
 	if statusValidate {
-		client := api.New(api.Options{SecretKey: profile.SecretKey, ProjectID: profile.ProjectID, Version: cmd.Root().Version})
+		opts := api.Options{ProjectID: resolvedProject, Version: cmd.Root().Version}
+		if profile.EffectiveAuthType() == authstore.AuthTypeOAuth {
+			opts.TokenSource = authstore.NewOAuthTokenSource(store, profile)
+		} else {
+			opts.SecretKey = profile.SecretKey
+		}
+		client := api.New(opts)
 		ctx, cancel := context.WithTimeout(cmd.Context(), 10*time.Second)
 		defer cancel()
 		projects, err := client.ListProjects(ctx)
@@ -71,6 +95,36 @@ func runStatus(cmd *cobra.Command, args []string) error {
 	}
 
 	return output.Table([]string{"field", "value"}, rows)
+}
+
+// projectSource explains where the resolved project_id came from so the
+// user can debug "why am I hitting the wrong project?".
+func projectSource(cmd *cobra.Command, p *authstore.Profile) string {
+	if v := cliutil.ProjectIDFlag(cmd); v != "" {
+		return "--project-id flag"
+	}
+	if v := os.Getenv("REVCAT_PROJECT_ID"); v != "" {
+		return "REVCAT_PROJECT_ID env"
+	}
+	if cfg, err := project.LoadFromCwd(); err == nil && cfg.ProjectID != "" {
+		return cfg.Path
+	}
+	if p != nil && p.ProjectID != "" {
+		return "profile binding"
+	}
+	return "-"
+}
+
+func expiresLine(ms int64) string {
+	if ms == 0 {
+		return "-"
+	}
+	t := time.UnixMilli(ms).Local()
+	delta := time.Until(t)
+	if delta < 0 {
+		return t.Format("2006-01-02 15:04 MST") + " (EXPIRED)"
+	}
+	return t.Format("2006-01-02 15:04 MST")
 }
 
 func emptyDash(s string) string {

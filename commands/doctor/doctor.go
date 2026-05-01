@@ -13,8 +13,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/akshitkrnagpal/revcat/internal/api"
-	authstore "github.com/akshitkrnagpal/revcat/internal/auth"
+	"github.com/akshitkrnagpal/revcat/internal/cliutil"
 	"github.com/akshitkrnagpal/revcat/internal/output"
 )
 
@@ -26,35 +25,24 @@ var Cmd = &cobra.Command{
 }
 
 func runDoctor(cmd *cobra.Command, args []string) error {
-	bypass := false
-	if f := cmd.Root().PersistentFlags().Lookup("bypass-keychain"); f != nil {
-		bypass = f.Value.String() == "true"
-	}
-
 	rows := [][]any{
 		{"OK", "platform", fmt.Sprintf("%s/%s %s", runtime.GOOS, runtime.GOARCH, runtime.Version())},
 		{"OK", "revcat", cmd.Root().Version},
 	}
 
-	store, err := authstore.Open(bypass)
-	if err != nil {
-		rows = append(rows, []any{"FAIL", "credential store", err.Error()})
-		return output.Table([]string{"status", "check", "detail"}, rows)
-	}
 	storeName := "keychain"
-	if bypass {
+	if cliutil.BypassKeychain(cmd) {
 		storeName = "local file"
 	}
-	rows = append(rows, []any{"OK", "credential store", storeName})
 
-	profile, err := authstore.Resolve(store, "")
+	client, profile, err := cliutil.Client(cmd)
 	if err != nil {
-		rows = append(rows, []any{"FAIL", "active profile", "no profile found - run `revcat auth login`"})
+		rows = append(rows, []any{"FAIL", "credential store / active profile", err.Error()})
 		return output.Table([]string{"status", "check", "detail"}, rows)
 	}
-	rows = append(rows, []any{"OK", "active profile", profile.Name})
+	rows = append(rows, []any{"OK", "credential store", storeName})
+	rows = append(rows, []any{"OK", "active profile", fmt.Sprintf("%s (%s)", profile.Name, profile.EffectiveAuthType())})
 
-	client := api.New(api.Options{SecretKey: profile.SecretKey, ProjectID: profile.ProjectID, Version: cmd.Root().Version})
 	ctx, cancel := context.WithTimeout(cmd.Context(), 10*time.Second)
 	defer cancel()
 	projects, err := client.ListProjects(ctx)
@@ -63,6 +51,12 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 		return output.Table([]string{"status", "check", "detail"}, rows)
 	}
 	rows = append(rows, []any{"OK", "api reach", fmt.Sprintf("ok, %d project access", len(projects))})
+
+	if pid := cliutil.ResolveProjectID(cmd, profile); pid != "" {
+		rows = append(rows, []any{"OK", "project context", pid})
+	} else {
+		rows = append(rows, []any{"WARN", "project context", "none - run `revcat init` or pass --project-id"})
+	}
 
 	return output.Table([]string{"status", "check", "detail"}, rows)
 }

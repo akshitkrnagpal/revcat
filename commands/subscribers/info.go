@@ -11,7 +11,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/akshitkrnagpal/revcat/internal/api"
-	authstore "github.com/akshitkrnagpal/revcat/internal/auth"
+	"github.com/akshitkrnagpal/revcat/internal/cliutil"
 	"github.com/akshitkrnagpal/revcat/internal/output"
 )
 
@@ -34,20 +34,10 @@ Example:
 func runInfo(cmd *cobra.Command, args []string) error {
 	customerID := args[0]
 
-	store, err := authstore.Open(bypassKeychain(cmd))
+	client, _, err := cliutil.Client(cmd)
 	if err != nil {
 		return err
 	}
-	prof, err := authstore.Resolve(store, profile(cmd))
-	if err != nil {
-		return err
-	}
-
-	client := api.New(api.Options{
-		SecretKey: prof.SecretKey,
-		ProjectID: prof.ProjectID,
-		Version:   cmd.Root().Version,
-	})
 
 	ctx, cancel := context.WithTimeout(cmd.Context(), 30*time.Second)
 	defer cancel()
