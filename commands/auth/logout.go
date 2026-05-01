@@ -61,6 +61,9 @@ func runLogout(cmd *cobra.Command, args []string) error {
 				output.Warn("delete %q: %v", n, err)
 			}
 		}
+		if err := authstore.ClearActive(); err != nil {
+			output.Warn("clear active marker: %v", err)
+		}
 		output.Success("removed %d profiles", len(names))
 		return nil
 	}
@@ -74,6 +77,11 @@ func runLogout(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("no profile named %q", name)
 		}
 		return err
+	}
+	if active, _ := authstore.GetActive(); active == name {
+		if err := authstore.ClearActive(); err != nil {
+			output.Warn("clear active marker: %v", err)
+		}
 	}
 	output.Success("removed profile %q", name)
 	return nil

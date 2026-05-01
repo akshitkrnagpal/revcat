@@ -28,6 +28,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/99designs/keyring"
@@ -122,12 +123,33 @@ func openKeychain() (GlobalStore, error) {
 		KeychainTrustApplication: true,
 		KeychainSynchronizable:   false,
 		FileDir:                  "~/.revcat/keyring",
-		FilePasswordFunc:         keyring.TerminalPrompt,
+		FilePasswordFunc:         cachedPassphrase,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("open keychain: %w", err)
 	}
 	return &keychainStore{ring: ring}, nil
+}
+
+// cachedPassphrase wraps keyring.TerminalPrompt in a process-scoped
+// sync.Once. The file-backend keyring (used on macOS without cgo and on
+// Linux without secret-service) re-prompts for the passphrase on every
+// open, which means a single `revcat init` would prompt 2-3 times. We
+// only need the user to enter it once per invocation.
+//
+// macOS Keychain / Linux Secret Service backends don't call this func
+// at all (the OS holds the passphrase), so the cache is harmless there.
+var (
+	passOnce sync.Once
+	passVal  string
+	passErr  error
+)
+
+func cachedPassphrase(prompt string) (string, error) {
+	passOnce.Do(func() {
+		passVal, passErr = keyring.TerminalPrompt(prompt)
+	})
+	return passVal, passErr
 }
 
 func (s *keychainStore) Get(name string) (*Profile, error) {

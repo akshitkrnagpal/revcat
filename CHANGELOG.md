@@ -2,6 +2,22 @@
 
 Notable changes per release. Dates are UTC.
 
+## [v0.4.0-alpha.3](https://github.com/akshitkrnagpal/revcat/releases/tag/v0.4.0-alpha.3) - 2026-05-01
+
+UX polish on top of alpha.2: one passphrase prompt per invocation instead of three, and a self-healing fix for stale `auth use` markers that made every command fail with "no profile found" after `auth logout --all`.
+
+### Fixed
+
+- `revcat init` (and any command opening the global keyring more than once) now prompts for the file-backed keyring passphrase exactly once per invocation. Previously each open re-prompted, so a single init would ask 2-3 times. The cache is process-scoped, so subsequent invocations still ask once. The macOS Keychain / Linux Secret Service backends are unaffected (the OS handles the passphrase and never calls our prompt func).
+- `revcat auth logout --all` and `revcat auth logout <name>` now clear `~/.revcat/active` when the deleted profile was the active one. Without this, subsequent commands resolved to a missing profile and errored with "no profile found".
+- The credential resolver self-heals when `~/.revcat/active` points to a profile that no longer exists: falls through to the `default` profile (if it exists) and clears the stale marker. Saves one round-trip of confused error messages for users upgrading from earlier alpha.
+
+### Internal
+
+- New `cliutil.ClientFromResolved` lets long-running commands (init, doctor) build the API client from an already-resolved credential without re-running `Resolve` (each Resolve re-opens the global store).
+- `internal/auth.cachedPassphrase` wraps `keyring.TerminalPrompt` in a `sync.Once`. First call prompts, subsequent calls within the process reuse the value.
+- New `internal/auth.ClearActive` removes `~/.revcat/active`. Called from logout and from the resolver's self-heal path.
+
 ## [v0.4.0-alpha.2](https://github.com/akshitkrnagpal/revcat/releases/tag/v0.4.0-alpha.2) - 2026-05-01
 
 OAuth becomes the only auth flow. Per-directory credentials let agents and sandboxes operate inside a repo without touching the user's keychain. Breaking change: secret-key auth is removed.

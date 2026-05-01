@@ -98,12 +98,14 @@ func runInit(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("init needs an authenticated profile: %w", err)
 	}
-	if resolved.Source == authstore.SourceLocal {
+	if resolved.Source == authstore.SourceLocal && !flagForce {
 		return errors.New("a .revcat/config.json already exists in this tree; pass --force to reinit")
 	}
 
-	// Build a client with whatever creds we have, no project bound yet.
-	client, _, err := cliutil.Client(cmd)
+	// Build a client from the resolved creds we already have so we
+	// don't re-open the keyring (which re-prompts for the passphrase
+	// on the file backend).
+	client, err := cliutil.ClientFromResolved(cmd, resolved, "")
 	if err != nil {
 		return err
 	}
@@ -116,7 +118,7 @@ func runInit(cmd *cobra.Command, args []string) error {
 	tomlCfg := &project.Config{ProjectID: projectID}
 	var apps []project.App
 	if !flagNoApps {
-		apps, err = pickApps(cmd.Context(), cmd, projectID)
+		apps, err = pickApps(cmd.Context(), cmd, resolved, projectID)
 		if err != nil {
 			return err
 		}
@@ -204,7 +206,7 @@ func pickProjectID(parent context.Context, cmd *cobra.Command, client *api.Clien
 	return projects[idx].ID, nil
 }
 
-func pickApps(parent context.Context, cmd *cobra.Command, projectID string) ([]project.App, error) {
+func pickApps(parent context.Context, cmd *cobra.Command, resolved *authstore.Resolved, projectID string) ([]project.App, error) {
 	if len(flagAppIDs) > 0 {
 		out := make([]project.App, len(flagAppIDs))
 		for i, id := range flagAppIDs {
@@ -212,7 +214,7 @@ func pickApps(parent context.Context, cmd *cobra.Command, projectID string) ([]p
 		}
 		return out, nil
 	}
-	scoped, _, err := cliutil.ClientForProject(cmd, projectID)
+	scoped, err := cliutil.ClientFromResolved(cmd, resolved, projectID)
 	if err != nil {
 		return nil, err
 	}

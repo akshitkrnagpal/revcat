@@ -55,3 +55,17 @@ func GetActive() (string, error) {
 	}
 	return strings.TrimSpace(string(b)), nil
 }
+
+// ClearActive removes ~/.revcat/active. Used by `auth logout` when the
+// removed profile was the active one - leaving a stale pointer would
+// make every subsequent command resolve to a missing profile.
+func ClearActive() error {
+	path, err := activeFilePath()
+	if err != nil {
+		return err
+	}
+	if err := os.Remove(path); err != nil && !errors.Is(err, os.ErrNotExist) {
+		return err
+	}
+	return nil
+}
