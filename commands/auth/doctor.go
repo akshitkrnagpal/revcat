@@ -10,6 +10,7 @@ import (
 
 	"github.com/akshitkrnagpal/revcat/internal/api"
 	authstore "github.com/akshitkrnagpal/revcat/internal/auth"
+	"github.com/akshitkrnagpal/revcat/internal/cliutil"
 	"github.com/akshitkrnagpal/revcat/internal/output"
 )
 
@@ -43,7 +44,7 @@ func runAuthDoctor(cmd *cobra.Command, args []string) error {
 	}
 	checks = append(checks, check{name: "credential store", ok: true, msg: storeName + " accessible"})
 
-	profile, err := authstore.Resolve(store, "")
+	profile, err := authstore.Resolve(store, cliutil.Profile(cmd))
 	if err != nil {
 		checks = append(checks, check{name: "active profile", ok: false, msg: err.Error(), hint: "run `revcat auth login --name default --secret-key sk_...`"})
 		return renderChecks(checks)

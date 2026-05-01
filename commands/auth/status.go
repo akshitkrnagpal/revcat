@@ -9,6 +9,7 @@ import (
 
 	"github.com/akshitkrnagpal/revcat/internal/api"
 	authstore "github.com/akshitkrnagpal/revcat/internal/auth"
+	"github.com/akshitkrnagpal/revcat/internal/cliutil"
 	"github.com/akshitkrnagpal/revcat/internal/output"
 )
 
@@ -35,7 +36,11 @@ func runStatus(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	profile, err := authstore.Resolve(store, statusName)
+	name := statusName
+	if name == "" {
+		name = cliutil.Profile(cmd)
+	}
+	profile, err := authstore.Resolve(store, name)
 	if err != nil {
 		return err
 	}
