@@ -14,7 +14,7 @@ var listCmd = &cobra.Command{
 }
 
 func runList(cmd *cobra.Command, args []string) error {
-	store, err := authstore.Open(bypassKeychain(cmd))
+	store, err := authstore.OpenGlobal(bypassKeychain(cmd))
 	if err != nil {
 		return err
 	}
@@ -31,14 +31,10 @@ func runList(cmd *cobra.Command, args []string) error {
 		}
 		p, err := store.Get(n)
 		if err != nil {
-			rows = append(rows, []any{marker, n, "(unreadable)", ""})
+			rows = append(rows, []any{marker, n, "(unreadable: " + err.Error() + ")"})
 			continue
 		}
-		credential := redactKey(p.SecretKey)
-		if p.EffectiveAuthType() == authstore.AuthTypeOAuth {
-			credential = "oauth:" + redactKey(p.AccessToken)
-		}
-		rows = append(rows, []any{marker, n, string(p.EffectiveAuthType()), credential, emptyDash(p.ProjectID)})
+		rows = append(rows, []any{marker, n, redactKey(p.AccessToken)})
 	}
-	return output.Table([]string{"", "name", "auth_type", "credential", "project_id"}, rows)
+	return output.Table([]string{"", "name", "access_token"}, rows)
 }

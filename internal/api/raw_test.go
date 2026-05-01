@@ -35,7 +35,7 @@ func TestGetProductRaw_PreservesAllV2Fields(t *testing.T) {
 	defer srv.Close()
 
 	c := New(Options{
-		SecretKey: "sk_test",
+		TokenSource: stubToken("sk_test"),
 		ProjectID: "proj_xyz",
 		BaseURL:   srv.URL,
 	})
@@ -75,7 +75,7 @@ func TestDoRaw_ReturnsBodyOnSuccess(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	c := New(Options{SecretKey: "sk", BaseURL: srv.URL})
+	c := New(Options{TokenSource: stubToken("sk"), BaseURL: srv.URL})
 
 	var dst struct {
 		A int `json:"a"`

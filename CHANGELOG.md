@@ -2,6 +2,40 @@
 
 Notable changes per release. Dates are UTC.
 
+## [v0.4.0-alpha.2](https://github.com/akshitkrnagpal/revcat/releases/tag/v0.4.0-alpha.2) - 2026-05-01
+
+OAuth becomes the only auth flow. Per-directory credentials let agents and sandboxes operate inside a repo without touching the user's keychain. Breaking change: secret-key auth is removed.
+
+### Changed (BREAKING)
+
+- `revcat auth login` is OAuth-only. `--secret-key`, `--secret-key-stdin`, and the `REVCAT_API_KEY` env var are removed. Existing v0.3 secret-key profiles error on read with: "this profile was created under v0.3 secret-key auth, which was removed in v0.4. run `revcat auth login` to reauth via OAuth".
+- `Profile` struct collapses to OAuth-only fields (`access_token`, `refresh_token`, `expires_at_ms`, `scope`, `client_id`). Profiles bound to a `project_id` no longer carry one — project context lives in revcat.toml / .revcat/config.json now.
+- `--bypass-keychain` (and `REVCAT_BYPASS_KEYCHAIN=1`) now writes the global file backend to `~/.revcat/config.json` (HOME), not `./.revcat/config.json` (cwd). The cwd path is now exclusively for project-local credentials.
+- `internal/api.Client` requires a `TokenSource`. `Options.SecretKey` removed. Programming-error panic if New is called without one.
+
+### Added
+
+- Project-local credential file at `./.revcat/config.json` (mode 0600, walked up from cwd, gitignored). Holds the OAuth credential blob plus `project_id` and optional apps. When present, every revcat command in the directory uses it instead of the global keychain. This is the "agents and sandboxes" story — drop the file in, no keychain needed.
+- `revcat init` now writes both halves: `revcat.toml` (committed: project_id + apps) and `.revcat/config.json` (gitignored: credentials + project_id + apps). Auto-appends `.revcat/` to `.gitignore` (idempotent). New `--no-local-creds` flag to write only the toml.
+- `REVCAT_REFRESH_TOKEN` env: CI / sandbox / agent escape hatch. When set, resolution short-circuits and synthesizes a virtual profile carrying just the refresh token. Pair with `REVCAT_PROJECT_ID` for full headless. Refreshed tokens stay in-memory for the duration of the invocation.
+- `auth status` and `auth doctor` now show `source` (local / keychain / file / env) and `source_path` so you can tell at a glance which credential is winning.
+
+### Internal
+
+- Three storage roles in `internal/auth`:
+  - `keychainStore` (default) — OS keychain via 99designs/keyring.
+  - `globalFileStore` — `~/.revcat/config.json`, profiles map, mode 0600.
+  - `LocalConfig` — `./.revcat/config.json`, single credential blob + project + apps.
+- Unified `Resolve(ResolveOptions)` returning `(*Resolved, error)` walks the precedence chain in one place. Source enum (`SourceLocal | SourceKeychain | SourceGlobalFile | SourceEnv`) flows through to status/doctor for diagnostics.
+- `OAuthTokenSource` writes refreshed tokens back to whichever tier they came from (local file vs global store; env hatch is in-memory only).
+- Tests: local config walk-up + roundtrip, gitignore append idempotency, env-hatch precedence, legacy secret-key profile rejection, full Resolve precedence chain.
+
+### Migration notes
+
+- Old keychain entries from v0.3 secret-key auth: error on first use. Run `revcat auth login` to reauth via OAuth.
+- Old `--bypass-keychain` users with `./.revcat/config.json` from v0.3 era: that path is now the project-local credentials file. The shape has changed (single blob, not profiles map). Old files won't load. Run `revcat auth login --bypass-keychain` to write fresh creds at `~/.revcat/config.json`.
+- v0.4.0-alpha.1 OAuth profiles in keychain: keep working; their saved `project_id` is ignored (resolution is now flag/env/file > error, no profile fallback). To get the per-directory model: run `revcat init` in your repo.
+
 ## [v0.4.0-alpha.1](https://github.com/akshitkrnagpal/revcat/releases/tag/v0.4.0-alpha.1) - 2026-05-01
 
 OAuth (PKCE) login as an alternative to v2 secret keys, plus a per-repo `revcat.toml` that pins project context Terraform-style. Alpha for early feedback before v0.4.0 final.

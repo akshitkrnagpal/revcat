@@ -24,32 +24,40 @@ func rootWithFlags(t *testing.T) *cobra.Command {
 	return root
 }
 
+// resolvedWith builds a fake Resolved bound to the given project_id, so
+// tests can drive ResolveProjectID through the credential-bound branch.
+func resolvedWith(projectID string) *authstore.Resolved {
+	return &authstore.Resolved{
+		Profile:   &authstore.Profile{Name: "test"},
+		ProjectID: projectID,
+		Source:    authstore.SourceLocal,
+	}
+}
+
 func TestResolveProjectID_FlagWins(t *testing.T) {
 	root := rootWithFlags(t)
 	if err := root.PersistentFlags().Set("project-id", "from_flag"); err != nil {
 		t.Fatal(err)
 	}
 	t.Setenv("REVCAT_PROJECT_ID", "from_env")
-	prof := &authstore.Profile{ProjectID: "from_profile"}
 
-	got := ResolveProjectID(root, prof)
+	got := ResolveProjectID(root, resolvedWith("from_resolved"))
 	if got != "from_flag" {
 		t.Fatalf("got %q, want from_flag", got)
 	}
 }
 
-func TestResolveProjectID_EnvWinsOverProfile(t *testing.T) {
+func TestResolveProjectID_EnvWinsOverResolved(t *testing.T) {
 	root := rootWithFlags(t)
 	t.Setenv("REVCAT_PROJECT_ID", "from_env")
-	prof := &authstore.Profile{ProjectID: "from_profile"}
 
-	got := ResolveProjectID(root, prof)
+	got := ResolveProjectID(root, resolvedWith("from_resolved"))
 	if got != "from_env" {
 		t.Fatalf("got %q, want from_env", got)
 	}
 }
 
-func TestResolveProjectID_TomlWinsOverProfile(t *testing.T) {
+func TestResolveProjectID_ResolvedWinsOverToml(t *testing.T) {
 	dir := t.TempDir()
 	if err := os.WriteFile(filepath.Join(dir, "revcat.toml"),
 		[]byte(`project_id = "from_toml"`), 0o644); err != nil {
@@ -59,25 +67,27 @@ func TestResolveProjectID_TomlWinsOverProfile(t *testing.T) {
 	t.Setenv("REVCAT_PROJECT_ID", "")
 
 	root := rootWithFlags(t)
-	prof := &authstore.Profile{ProjectID: "from_profile"}
 
-	got := ResolveProjectID(root, prof)
-	if got != "from_toml" {
-		t.Fatalf("got %q, want from_toml", got)
+	got := ResolveProjectID(root, resolvedWith("from_resolved"))
+	if got != "from_resolved" {
+		t.Fatalf("got %q, want from_resolved", got)
 	}
 }
 
-func TestResolveProjectID_FallsBackToProfile(t *testing.T) {
+func TestResolveProjectID_FallsBackToToml(t *testing.T) {
 	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "revcat.toml"),
+		[]byte(`project_id = "from_toml"`), 0o644); err != nil {
+		t.Fatal(err)
+	}
 	t.Chdir(dir)
 	t.Setenv("REVCAT_PROJECT_ID", "")
 
 	root := rootWithFlags(t)
-	prof := &authstore.Profile{ProjectID: "from_profile"}
 
-	got := ResolveProjectID(root, prof)
-	if got != "from_profile" {
-		t.Fatalf("got %q, want from_profile", got)
+	got := ResolveProjectID(root, &authstore.Resolved{Profile: &authstore.Profile{}})
+	if got != "from_toml" {
+		t.Fatalf("got %q, want from_toml", got)
 	}
 }
 
@@ -87,7 +97,7 @@ func TestResolveProjectID_EmptyWhenNothingConfigured(t *testing.T) {
 	t.Setenv("REVCAT_PROJECT_ID", "")
 
 	root := rootWithFlags(t)
-	got := ResolveProjectID(root, &authstore.Profile{})
+	got := ResolveProjectID(root, &authstore.Resolved{Profile: &authstore.Profile{}})
 	if got != "" {
 		t.Fatalf("got %q, want empty", got)
 	}

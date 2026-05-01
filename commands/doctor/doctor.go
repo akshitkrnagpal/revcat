@@ -35,13 +35,13 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 		storeName = "local file"
 	}
 
-	client, profile, err := cliutil.Client(cmd)
+	client, resolved, err := cliutil.Client(cmd)
 	if err != nil {
-		rows = append(rows, []any{"FAIL", "credential store / active profile", err.Error()})
+		rows = append(rows, []any{"FAIL", "credential resolve", err.Error()})
 		return output.Table([]string{"status", "check", "detail"}, rows)
 	}
 	rows = append(rows, []any{"OK", "credential store", storeName})
-	rows = append(rows, []any{"OK", "active profile", fmt.Sprintf("%s (%s)", profile.Name, profile.EffectiveAuthType())})
+	rows = append(rows, []any{"OK", "active credential", fmt.Sprintf("%s (source=%s)", resolved.Profile.Name, resolved.Source)})
 
 	ctx, cancel := context.WithTimeout(cmd.Context(), 10*time.Second)
 	defer cancel()
@@ -52,7 +52,7 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 	}
 	rows = append(rows, []any{"OK", "api reach", fmt.Sprintf("ok, %d project access", len(projects))})
 
-	if pid := cliutil.ResolveProjectID(cmd, profile); pid != "" {
+	if pid := cliutil.ResolveProjectID(cmd, resolved); pid != "" {
 		rows = append(rows, []any{"OK", "project context", pid})
 	} else {
 		rows = append(rows, []any{"WARN", "project context", "none - run `revcat init` or pass --project-id"})

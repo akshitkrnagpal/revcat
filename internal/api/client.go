@@ -33,16 +33,6 @@ type TokenSource interface {
 	Token(ctx context.Context) (string, error)
 }
 
-// staticToken is the trivial source for project secret keys.
-type staticToken string
-
-func (s staticToken) Token(_ context.Context) (string, error) {
-	if s == "" {
-		return "", errors.New("no auth token configured")
-	}
-	return string(s), nil
-}
-
 // Client talks to the RC v2 REST API on behalf of a single profile.
 type Client struct {
 	http      *http.Client
@@ -53,32 +43,29 @@ type Client struct {
 	version   string
 }
 
-// New constructs a Client. SecretKey is required; ProjectID may be empty
-// for endpoints that don't need it (auth checks, project listing).
-//
-// Pass TokenSource for OAuth profiles where the access token rotates;
-// otherwise pass SecretKey and revcat builds a static source.
+// Options configures Client. TokenSource is required.
 type Options struct {
-	SecretKey   string
 	TokenSource TokenSource
 	ProjectID   string
 	BaseURL     string
 	Version     string
 }
 
+// New constructs a Client. opts.TokenSource is required.
 func New(opts Options) *Client {
 	base := opts.BaseURL
 	if base == "" {
 		base = BaseURL
 	}
-	src := opts.TokenSource
-	if src == nil {
-		src = staticToken(opts.SecretKey)
+	if opts.TokenSource == nil {
+		// Programming error rather than a user-facing one - cliutil
+		// is the only legitimate caller and it always wires a source.
+		panic("api.New: TokenSource is required")
 	}
 	return &Client{
 		http:      &http.Client{Timeout: 30 * time.Second},
 		baseURL:   base,
-		tokenSrc:  src,
+		tokenSrc:  opts.TokenSource,
 		projectID: opts.ProjectID,
 		debug:     strings.Contains(os.Getenv(envDebug), "api"),
 		version:   opts.Version,

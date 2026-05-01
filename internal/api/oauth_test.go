@@ -12,6 +12,14 @@ import (
 	"time"
 )
 
+// stubToken is a TokenSource for tests - returns the embedded literal,
+// no refresh logic.
+type stubToken string
+
+func (s stubToken) Token(_ context.Context) (string, error) {
+	return string(s), nil
+}
+
 func TestNewPKCE_S256ChallengeMatchesVerifier(t *testing.T) {
 	p, err := NewPKCE()
 	if err != nil {

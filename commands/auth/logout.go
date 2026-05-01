@@ -12,9 +12,8 @@ import (
 )
 
 var (
-	logoutAll  bool
-	logoutYes  bool
-	logoutName string
+	logoutAll bool
+	logoutYes bool
 )
 
 var logoutCmd = &cobra.Command{
@@ -31,7 +30,7 @@ func init() {
 }
 
 func runLogout(cmd *cobra.Command, args []string) error {
-	store, err := authstore.Open(bypassKeychain(cmd))
+	store, err := authstore.OpenGlobal(bypassKeychain(cmd))
 	if err != nil {
 		return err
 	}

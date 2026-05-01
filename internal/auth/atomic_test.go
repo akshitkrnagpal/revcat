@@ -14,10 +14,10 @@ func TestAtomicWriteJSON_HappyPath(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "config.json")
 
-	payload := localFile{Profiles: map[string]Profile{
-		"default": {Name: "default", SecretKey: "sk_live_abc", ProjectID: "proj_1"},
+	payload := map[string]any{"profiles": map[string]Profile{
+		"default": {Name: "default", AccessToken: "atk_abc", RefreshToken: "rtk_abc"},
 	}}
-	if err := atomicWriteJSON(path, &payload); err != nil {
+	if err := atomicWriteJSON(path, payload); err != nil {
 		t.Fatalf("atomicWriteJSON: %v", err)
 	}
 
@@ -35,8 +35,7 @@ func TestAtomicWriteJSON_HappyPath(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read: %v", err)
 	}
-	// Cheap content check: payload should round-trip through the JSON we wrote.
-	if !contains(b, []byte(`"sk_live_abc"`)) || !contains(b, []byte(`"proj_1"`)) {
+	if !contains(b, []byte(`"atk_abc"`)) || !contains(b, []byte(`"rtk_abc"`)) {
 		t.Errorf("content missing expected fields: %s", b)
 	}
 }

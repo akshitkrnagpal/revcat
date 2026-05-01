@@ -60,7 +60,7 @@ func TestPreviewOfferings_RequestShape(t *testing.T) {
 			defer srv.Close()
 			t.Setenv("REVCAT_V1_BASE_URL", srv.URL)
 
-			c := New(Options{SecretKey: "ignored", Version: "test"})
+			c := New(Options{TokenSource: stubToken("ignored"), Version: "test"})
 			resp, err := c.PreviewOfferings(context.Background(), tc.userID, "pk_test_abc123", tc.platform)
 			if err != nil {
 				t.Fatalf("PreviewOfferings: %v", err)
@@ -90,7 +90,7 @@ func TestPreviewOfferings_RequestShape(t *testing.T) {
 }
 
 func TestPreviewOfferings_Validation(t *testing.T) {
-	c := New(Options{SecretKey: "k", Version: "test"})
+	c := New(Options{TokenSource: stubToken("k"), Version: "test"})
 	if _, err := c.PreviewOfferings(context.Background(), "", "pk", "ios"); err == nil {
 		t.Error("want error for empty user id")
 	}
@@ -110,7 +110,7 @@ func TestPreviewOfferings_APIError(t *testing.T) {
 	defer srv.Close()
 	t.Setenv("REVCAT_V1_BASE_URL", srv.URL)
 
-	c := New(Options{SecretKey: "k", Version: "test"})
+	c := New(Options{TokenSource: stubToken("k"), Version: "test"})
 	_, err := c.PreviewOfferings(context.Background(), "u", "bad_key", "iOS")
 	if err == nil {
 		t.Fatal("want error for 401")
