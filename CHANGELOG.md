@@ -2,6 +2,43 @@
 
 Notable changes per release. Dates are UTC.
 
+## [v0.4.0](https://github.com/akshitkrnagpal/revcat/releases/tag/v0.4.0) - 2026-05-01
+
+OAuth-only auth and per-directory project context. Breaking change from v0.3: secret-key auth removed.
+
+The headline shape: one browser login (saved to your OS keychain), then `revcat init` inside each repo writes a gitignored `.revcat/config.json` so any agent or sandbox in that directory inherits the credential without keychain access. `revcat.toml` (committed) records the project_id so a fresh clone documents which RC project the repo belongs to. Refresh tokens auto-rotate; no more stale-key 401s.
+
+Alpha-by-alpha incremental detail is preserved below ([alpha.1](#v040-alpha1---2026-05-01), [alpha.2](#v040-alpha2---2026-05-01), [alpha.3](#v040-alpha3---2026-05-01)). The summary:
+
+### Added
+
+- `revcat auth login` runs the browser OAuth flow against RevenueCat's public PKCE client (`UmV2Q2F0`). Tokens auto-refresh transparently before each request; rotated refresh tokens persist back to whichever store they came from.
+- `revcat init` writes both halves of a project context: `revcat.toml` (committed: project_id + apps) and `.revcat/config.json` (gitignored, mode 0600: credentials + project_id + apps). Auto-appends `.revcat/` to `.gitignore`. Interactive picker for project + apps, or scripted via `--project-id`, `--app-id`, `--no-apps`, `--force`, `--no-local-creds`.
+- New global flag `--project-id` and env `REVCAT_PROJECT_ID`. Project resolution: flag > env > local config > revcat.toml > error.
+- New env `REVCAT_REFRESH_TOKEN`: refresh-only headless / CI / sandbox hatch. Synthesizes a virtual profile, refreshes in-memory each invocation. Pair with `REVCAT_PROJECT_ID` for full headless.
+- New env `REVCAT_OAUTH_CLIENT_ID` and `-ldflags '-X .../auth.EmbeddedClientID=<id>'` to override the embedded OAuth client.
+- `auth status` and `auth doctor` now show `source` (local | keychain | file | env) and `source_path` so you can debug "why did it hit that project?". `auth doctor` also flags `revcat.toml` vs `.revcat/config.json` mismatches.
+- `revcat init` page in the docs (`docs/commands/init.md`).
+
+### Changed (BREAKING)
+
+- Secret-key login removed. `--secret-key`, `--secret-key-stdin`, and `REVCAT_API_KEY` are gone. Old v0.3 secret-key profiles error on read with "this profile was created under v0.3 secret-key auth, which was removed in v0.4. run `revcat auth login` to reauth via OAuth".
+- `Profile` collapsed to OAuth-only fields (`access_token`, `refresh_token`, `expires_at_ms`, `scope`, `client_id`). No more `project_id` on the credential.
+- `--bypass-keychain` (and `REVCAT_BYPASS_KEYCHAIN=1`) now writes to `~/.revcat/config.json` (HOME-anchored), not `./.revcat/config.json` (cwd). The cwd path is now exclusively for project-local credentials written by `revcat init`.
+- `internal/api.Client` requires a `TokenSource`; `Options.SecretKey` removed.
+
+### Fixed
+
+- File-backed keyring (used on macOS without cgo and on Linux without secret-service) now caches the passphrase per-process. Single `revcat init` prompts once, not 2-3 times.
+- `revcat auth logout --all` and `auth logout <active>` now clear `~/.revcat/active`. Self-heal in the resolver: if the active marker points to a profile that no longer exists, fall through to `default` and clear the marker.
+- Pre-existing pre-v0.4 bug: `auth status` and `auth doctor` ignored the global `--profile` flag, silently dropping it for their own `--name` flag. Now honored as a fallback.
+
+### Migration
+
+- Re-login via `revcat auth login` to drop any v0.3 secret-key entries from your keychain (they error otherwise).
+- After login, `cd` into each repo and run `revcat init` to bind project context.
+- For CI or sandboxes, set `REVCAT_REFRESH_TOKEN` (and optionally `REVCAT_PROJECT_ID`) instead of running login.
+
 ## [v0.4.0-alpha.3](https://github.com/akshitkrnagpal/revcat/releases/tag/v0.4.0-alpha.3) - 2026-05-01
 
 UX polish on top of alpha.2: one passphrase prompt per invocation instead of three, and a self-healing fix for stale `auth use` markers that made every command fail with "no profile found" after `auth logout --all`.
