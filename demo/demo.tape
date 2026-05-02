@@ -31,6 +31,7 @@ Type 'export PS1="%F{12}$ %f"' Enter
 Ctrl+L
 Show
 
+# 1. Health check. Shows OAuth source + resolved project context in one table.
 Type "revcat doctor --output table"
 Sleep 200ms
 Enter
@@ -40,7 +41,7 @@ Type "clear"
 Enter
 Sleep 200ms
 
-# Catalog read
+# 2. Catalog read.
 Type "revcat offerings list"
 Sleep 200ms
 Enter
@@ -50,17 +51,18 @@ Type "clear"
 Enter
 Sleep 200ms
 
-# Catalog: entitlements
-Type "revcat entitlements list"
+# 3. Project membership - new in v0.5.
+Type "revcat collaborators list"
 Sleep 200ms
 Enter
-Sleep 2.5s
+Sleep 3s
 
 Type "clear"
 Enter
 Sleep 200ms
 
-# The verb-orchestrator: dry-run a paywall publish.
+# 4. The verb-orchestrator: dry-run a paywall publish.
+#    Sets the offering as current AND PUTs the paywall body in one shot.
 Type "revcat publish offering default --paywall ./paywall.json --dry-run --confirm"
 Sleep 300ms
 Enter
