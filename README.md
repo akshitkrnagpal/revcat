@@ -77,8 +77,8 @@ revcat synthesizes a virtual profile, refreshes tokens in-memory, no keychain or
 ## Command surface
 
 ```
-revcat projects           list | view
-revcat apps               list | view | public-keys | storekit-config
+revcat projects           list | view | create
+revcat apps               list | view | public-keys | storekit-config | create | update | delete
 
 revcat entitlements       list | view | create | update | delete | archive | unarchive
                           products | attach | detach
@@ -103,6 +103,7 @@ revcat publish offering   <id> [--paywall ./paywall.json] [--current] [-y] [--dr
 revcat metrics            overview
 revcat charts             get <name> | options <name>
 revcat audit-logs         list
+revcat collaborators      list
 
 revcat webhooks           list | view | create | update | delete
 revcat virtual-currencies list | view | create | update | delete | archive | unarchive
