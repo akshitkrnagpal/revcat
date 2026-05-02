@@ -239,9 +239,8 @@ type AuditLogEntry struct {
 	AdditionalData   map[string]any `json:"additional_data,omitempty"`
 }
 
-// ListAuditLogs pages every audit log entry the active key can see.
-// Available with normal project secret keys (despite earlier docs that
-// claimed partner-tier only).
+// ListAuditLogs pages every audit log entry the active credential
+// can see.
 func (c *Client) ListAuditLogs(ctx context.Context) ([]AuditLogEntry, error) {
 	if err := c.requireProject(); err != nil {
 		return nil, err

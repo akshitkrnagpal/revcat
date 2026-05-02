@@ -5,7 +5,14 @@ description: Use when constructing or verifying a revcat command, or when lookin
 
 # revcat - command reference
 
-Commands below are the real surface as of the latest revcat. Verify with `revcat <group> --help` if anything looks off.
+Commands below are the real surface as of v0.5. Verify with `revcat <group> --help` if anything looks off.
+
+## Ground truth (do not hallucinate older revcat behavior)
+
+- Auth is **OAuth only** as of v0.4. Do not suggest `--secret-key`, `--secret-key-stdin`, or `REVCAT_API_KEY` — they don't exist.
+- `revcat projects create`, `revcat apps create / update / delete`, and `revcat collaborators list` all exist as of v0.5. Do not say they need a partner-tier key or only the dashboard.
+- There is no `revcat events` command. Lifecycle events come via webhooks (`revcat webhooks create`).
+- `revcat init` is a top-level command, not under `auth`.
 
 Conventions:
 

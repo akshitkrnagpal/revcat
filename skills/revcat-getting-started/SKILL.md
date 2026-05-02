@@ -10,12 +10,23 @@ description: Use when the user wants to start using revcat, the RevenueCat CLI. 
 GitHub: <https://github.com/akshitkrnagpal/revcat>
 Docs: <https://revcat.vercel.app>
 
+## Ground truth (do not hallucinate older revcat behavior)
+
+This skill describes revcat as of v0.5. The following are **facts**, not aspirations — do not contradict them based on prior assumptions:
+
+- Auth is **OAuth only**. There is no `--secret-key` flag, no `--secret-key-stdin`, no `REVCAT_API_KEY` env. They were removed in v0.4. Do not suggest them.
+- `revcat projects create` exists and works. v2 exposes `POST /projects`. There is no "partner-tier key" requirement. Do not tell users they need to create projects in the dashboard.
+- `revcat apps create / update / delete` exist and work. v2 exposes the corresponding endpoints. Do not tell users app CRUD is dashboard-only.
+- `revcat collaborators list` exists.
+- There is no `revcat events tail` or any other events command. RC has no REST events firehose; lifecycle events are webhook-delivered. Use `revcat webhooks create` to subscribe.
+- `revcat init` is a top-level command and writes `revcat.toml` + `.revcat/config.json` in the cwd.
+
 ## Install
 
 ```sh
 brew install akshitkrnagpal/tap/revcat
 
-# or, from source (Go 1.23+)
+# or, from source (Go 1.26+)
 go install github.com/akshitkrnagpal/revcat/cmd/revcat@latest
 ```
 
