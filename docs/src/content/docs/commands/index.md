@@ -12,7 +12,7 @@ revcat is organized by RevenueCat resource: customers, offerings, paywalls, etc.
 | [`projects`](/commands/projects/) | `list`, `view` | - |
 | [`apps`](/commands/apps/) | `list`, `view`, `public-keys`, `storekit-config` | - |
 | [`entitlements`](/commands/entitlements/) | `list`, `view`, `products` | `create`, `update`, `delete`, `archive`, `unarchive`, `attach`, `detach` |
-| [`offerings`](/commands/offerings/) | `list`, `view` | `create`, `update`, `delete`, `archive`, `unarchive`, `set-current` |
+| [`offerings`](/commands/offerings/) | `list`, `view`, `preview` | `create`, `update`, `delete`, `archive`, `unarchive`, `set-current` |
 | [`packages`](/commands/packages/) | `list`, `view`, `products` | `create`, `update`, `delete`, `attach`, `detach` |
 | [`products`](/commands/products/) | `list`, `view` | `create`, `update`, `delete`, `archive`, `unarchive`, `push-to-store` |
 | [`paywalls`](/commands/paywalls/) | `list`, `view` | `create`, `delete` |
@@ -21,7 +21,7 @@ revcat is organized by RevenueCat resource: customers, offerings, paywalls, etc.
 
 | Group | Reads | Writes |
 | --- | --- | --- |
-| [`subscribers`](/commands/subscribers/) | `info`, `list`, `attributes`, `invoices`, `vc-balance` | `create`, `delete`, `grant`, `revoke`, `refund`, `transfer`, `override-offering`, `restore-google-play`, `vc-tx`, `vc-set-balance` |
+| [`subscribers`](/commands/subscribers/) | `info`, `list`, `attributes`, `invoices` | `create`, `delete`, `grant`, `revoke`, `refund`, `transfer` |
 | [`subscriptions`](/commands/subscriptions/) | `view`, `transactions`, `entitlements`, `management-url`, `search` | `cancel`, `refund` |
 | [`purchases`](/commands/purchases/) | `view`, `entitlements`, `search` | `refund` |
 | [`invoices`](/commands/invoices/) | `view` | - |
