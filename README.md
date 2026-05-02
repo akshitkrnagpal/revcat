@@ -167,18 +167,6 @@ Audit who changed what:
 revcat audit-logs list
 ```
 
-## Out of scope
-
-A small slice of the v2 API isn't exposed by REST at all. Those are not implemented:
-
-- `POST /projects` (project create)
-- App CRUD (`POST /apps`, `POST /apps/{id}`, `DELETE /apps/{id}`)
-- `GET /collaborators`
-
-Manage these in the dashboard.
-
-RC also has no REST events firehose; lifecycle events (purchases, renewals, cancellations) are delivered via webhooks. Use `revcat webhooks create` to subscribe your endpoint.
-
 ## Debug
 
 ```sh
