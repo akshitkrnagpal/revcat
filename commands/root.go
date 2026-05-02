@@ -28,8 +28,15 @@ import (
 	"github.com/akshitkrnagpal/revcat/internal/output"
 )
 
-// Version is set at build time via -ldflags.
-var Version = "0.0.1-dev"
+// Build metadata. All set at build time via -ldflags injection (see
+// the Makefile and .goreleaser.yaml). The defaults below mark a build
+// that wasn't built through either path - useful for
+// `go run ./cmd/revcat` during development.
+var (
+	Version    = "0.0.1-dev"
+	CommitHash = ""
+	BuildTime  = ""
+)
 
 // Global flags. Stored at package level so subcommands can read them via
 // the cmd.Root() ancestor without prop drilling.
@@ -116,5 +123,9 @@ func init() {
 	rootCmd.AddCommand(subscriptionscmd.Cmd)
 	rootCmd.AddCommand(virtualcurrenciescmd.Cmd)
 	rootCmd.AddCommand(webhookscmd.Cmd)
-	rootCmd.AddCommand(versioncmd.Cmd(Version))
+	rootCmd.AddCommand(versioncmd.Cmd(versioncmd.BuildInfo{
+		Version:    Version,
+		CommitHash: CommitHash,
+		BuildTime:  BuildTime,
+	}))
 }

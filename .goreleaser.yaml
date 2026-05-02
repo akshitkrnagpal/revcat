@@ -17,6 +17,8 @@ builds:
     ldflags:
       - -s -w
       - -X github.com/akshitkrnagpal/revcat/commands.Version={{ .Version }}
+      - -X github.com/akshitkrnagpal/revcat/commands.CommitHash={{ .ShortCommit }}
+      - -X github.com/akshitkrnagpal/revcat/commands.BuildTime={{ .Date }}
     goos:
       - darwin
       - linux
