@@ -74,6 +74,7 @@ func runLogin(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	server.ProfileName = loginName
 	defer server.Close()
 
 	state, err := api.RandomState()
