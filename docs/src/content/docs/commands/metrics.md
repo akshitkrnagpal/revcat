@@ -1,15 +1,18 @@
 ---
 title: metrics
-description: Project-level revenue + subscription metrics.
+description: Project-level revenue + subscription metrics
 ---
+
+Project-level revenue + subscription metrics
 
 ## Subcommands
 
 | Command | Description |
 | --- | --- |
-| `metrics overview` | Headline metrics for the active project (active subs, MRR, lifetime revenue, ...) |
+| `metrics overview` | Headline metrics for the active project |
 
-For per-chart drill-downs see [`revcat charts get`](/commands/charts/).
+Full flag reference: see [the CLI reference](/reference/cli/).
+<!-- AUTOGEN_END -->
 
 ## Example
 

@@ -1,22 +1,38 @@
 ---
 title: auth
-description: Manage RevenueCat OAuth credentials.
+description: Manage RevenueCat authentication
 ---
 
-revcat authenticates against RevenueCat via OAuth (PKCE). One browser login populates a global profile in your OS keychain; running `revcat init` inside a repo writes a per-directory `.revcat/config.json` (gitignored, mode 0600) so agents and sandboxes operating in the directory inherit the credential without keychain access.
+revcat authenticates against RevenueCat via OAuth. One browser login
+populates a global profile in your OS keychain; a per-repo
+.revcat/config.json (written by `revcat init`) carries that credential
+into the directory so agents and sandboxes work without keychain access.
 
-For Linux containers without secret-service, pass `--bypass-keychain` (or set `REVCAT_BYPASS_KEYCHAIN=1`) to use `~/.revcat/config.json` instead. For headless CI / fresh sandboxes, set `REVCAT_REFRESH_TOKEN` to skip both keychain and login flow.
+Most users only need:
+
+    revcat auth login            # browser OAuth, saves to keychain
+    cd ~/your/repo && revcat init   # bind this repo to a project
+    revcat auth status
+
+For Linux containers without secret-service, pass --bypass-keychain
+(or set REVCAT_BYPASS_KEYCHAIN=1) to use ~/.revcat/config.json instead.
+
+For CI / fresh sandboxes with no browser: set REVCAT_REFRESH_TOKEN
+(and REVCAT_PROJECT_ID) to skip both keychain and login flow.
 
 ## Subcommands
 
 | Command | Description |
 | --- | --- |
-| `auth login` | Run the browser OAuth flow and save tokens |
-| `auth status` | Show the resolved credential and where it came from (`--validate` hits the API) |
 | `auth doctor` | Self-diagnose auth setup |
-| `auth use <name>` | Set the default global profile |
-| `auth list` | List stored global profiles |
-| `auth logout [name]` | Remove a stored profile (`--all` wipes them all) |
+| `auth list` | List stored auth profiles |
+| `auth login` | Authenticate revcat against RevenueCat via OAuth |
+| `auth logout` | Remove a stored auth profile |
+| `auth status` | Show the active auth profile and resolved project |
+| `auth use <profile>` | Set the default auth profile |
+
+Full flag reference: see [the CLI reference](/reference/cli/).
+<!-- AUTOGEN_END -->
 
 ## Storage tiers
 

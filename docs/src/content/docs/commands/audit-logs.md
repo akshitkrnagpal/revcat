@@ -1,13 +1,20 @@
 ---
 title: audit-logs
-description: Inspect the project's audit log.
+description: Inspect the project's audit log
 ---
+
+Inspect the project's audit log
 
 ## Subcommands
 
 | Command | Description |
 | --- | --- |
-| `audit-logs list` | List audit log entries (TTY shows `when / action / actor / resource`; JSON returns the full payload) |
+| `audit-logs list` | List audit log entries |
+
+Aliases: `audit`.
+
+Full flag reference: see [the CLI reference](/reference/cli/).
+<!-- AUTOGEN_END -->
 
 ## Examples
 
