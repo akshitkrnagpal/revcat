@@ -175,3 +175,28 @@ func (c *Client) ListAuditLogs(ctx context.Context) ([]AuditLogEntry, error) {
 	}
 	return paginate[AuditLogEntry](ctx, c, c.projectPath("/audit_logs"))
 }
+
+// Collaborator is a member of a RevenueCat project.
+//
+// `name` is nullable on the v2 API (returned as null for invitees who
+// haven't completed signup). `accepted_at` is also nullable - null
+// means a pending invite. `role` is free-form per the v2 spec; common
+// values include "admin", "developer", "billing", "viewer".
+type Collaborator struct {
+	ID         string `json:"id"`
+	Name       string `json:"name,omitempty"`
+	Email      string `json:"email"`
+	Role       string `json:"role,omitempty"`
+	AcceptedAt int64  `json:"accepted_at,omitempty"`
+	HasMFA     bool   `json:"has_mfa"`
+}
+
+// ListCollaborators pages through every collaborator on the active
+// project. v2: GET /v2/projects/{project_id}/collaborators,
+// scope project_configuration:collaborators:read.
+func (c *Client) ListCollaborators(ctx context.Context) ([]Collaborator, error) {
+	if err := c.requireProject(); err != nil {
+		return nil, err
+	}
+	return paginate[Collaborator](ctx, c, c.projectPath("/collaborators"))
+}

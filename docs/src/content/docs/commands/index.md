@@ -33,6 +33,7 @@ revcat is organized by RevenueCat resource: customers, offerings, paywalls, etc.
 | [`metrics`](/commands/metrics/) | `overview` | - |
 | [`charts`](/commands/charts/) | `get`, `options` | - |
 | [`audit-logs`](/commands/audit-logs/) | `list` | - |
+| [`collaborators`](/commands/collaborators/) | `list` | - |
 
 ## Integrations
 
