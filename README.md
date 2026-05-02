@@ -192,23 +192,20 @@ Full docs at <https://revcat.vercel.app> - install, quickstart, every command, c
 
 ## AI agent support
 
-revcat ships [Agent Skills](./skills/) (open standard, distributable via skills.sh) so Claude Code, Cursor, and Codex can compose revcat commands accurately:
+revcat ships four [Agent Skills](./skills/) (open standard) so Claude Code, Cursor, and Codex can compose revcat commands accurately:
 
-- `revcat-getting-started` - install, auth, top-level command map
-- `revcat-commands` - real syntax + examples for every subcommand
-- `revcat-troubleshooting` - common errors and fixes
+- `revcat-getting-started` — install, auth, top-level command map
+- `revcat-commands` — real syntax + examples for every subcommand
+- `revcat-troubleshooting` — common errors and fixes
+- `revcat-storefront-debug` — 7-step diagnostic for "the SDK sees 0 packages from my offering"
 
-Install locally:
+Install via [skills.sh](https://skills.sh) (auto-detects your agent):
 
 ```sh
-# Claude Code (project-scoped)
-mkdir -p .claude/skills && cp -R skills/revcat-* .claude/skills/
-
-# Claude Code (user-scoped, every project)
-mkdir -p ~/.claude/skills && cp -R skills/revcat-* ~/.claude/skills/
+npx skills add akshitkrnagpal/revcat
 ```
 
-See [`skills/README.md`](./skills/README.md) for Cursor and Codex install steps.
+Or manually — see [`skills/README.md`](./skills/README.md) for the Claude Code / Cursor / Codex paths.
 
 ## License
 
