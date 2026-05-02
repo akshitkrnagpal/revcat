@@ -9,27 +9,52 @@ Agent Skills for revcat. Each skill is a folder containing a `SKILL.md` with YAM
 - `revcat-troubleshooting/` — common errors and fixes (401, no profile, no project_id, v0.3-to-v0.4 upgrade paths, toml/local mismatch, Test Store quirks, v1-only endpoints, dashboard-only operations). Triggers on a failed command or error message.
 - `revcat-storefront-debug/` — 7-step diagnostic flow for "the SDK sees 0 packages from my offering." Covers the Test Store price gotcha, product/store binding checks, and the v1 `/subscribers/{id}/offerings` verify step. Triggers on "0 packages", "fetchOfferings empty", and similar SDK-side surprises.
 
-## Install for Claude Code
+## Install via skills.sh (recommended)
 
-User-level (available in every project):
+[skills.sh](https://skills.sh) is a registry for Agent Skills. The CLI auto-detects your agent (Claude Code, Cursor, Codex, etc.) and writes to the right config dir.
+
+All four revcat skills:
+
+```sh
+npx skills add akshitkrnagpal/revcat
+```
+
+A single skill from the bundle:
+
+```sh
+npx skills add akshitkrnagpal/revcat/revcat-getting-started
+npx skills add akshitkrnagpal/revcat/revcat-commands
+npx skills add akshitkrnagpal/revcat/revcat-troubleshooting
+npx skills add akshitkrnagpal/revcat/revcat-storefront-debug
+```
+
+Browse on the web: <https://skills.sh/akshitkrnagpal/revcat>.
+
+Restart your agent (or open a new session) and the skills are live.
+
+## Install manually
+
+If you can't or don't want to use skills.sh, copy the folders directly.
+
+### Claude Code
+
+User-level (every project):
 
 ```sh
 mkdir -p ~/.claude/skills
 cp -R skills/revcat-* ~/.claude/skills/
 ```
 
-Project-level (only when you open this repo / a specific project):
+Project-level (this repo only):
 
 ```sh
 mkdir -p .claude/skills
 cp -R skills/revcat-* .claude/skills/
 ```
 
-Restart Claude Code or open a new session — the skills will appear automatically.
+### Cursor
 
-## Install for Cursor
-
-Cursor reads project-scoped rules from `.cursor/rules/`. Wrap each skill into a Cursor rule:
+Cursor reads project-scoped rules from `.cursor/rules/`:
 
 ```sh
 mkdir -p .cursor/rules
@@ -39,18 +64,16 @@ for s in skills/revcat-*; do
 done
 ```
 
-Cursor picks them up on next session.
+### Codex
 
-## Install for Codex
-
-Codex CLI reads from `~/.codex/skills/` (when configured). Drop the folders in:
+Codex CLI reads from `~/.codex/skills/`:
 
 ```sh
 mkdir -p ~/.codex/skills
 cp -R skills/revcat-* ~/.codex/skills/
 ```
 
-If your Codex setup uses a different path, follow your local install docs — the SKILL.md format is portable across agents.
+If your agent uses a different path, follow its local install docs — the SKILL.md format is portable.
 
 ## Authoring guidelines
 
