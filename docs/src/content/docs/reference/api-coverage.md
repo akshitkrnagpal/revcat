@@ -11,8 +11,8 @@ Source of truth: <https://www.revenuecat.com/docs/api-v2>.
 ## Headline
 
 - Most v2 operations reachable with revcat's OAuth scope set are wrapped and smoke-tested.
+- A few v2 endpoints exist but aren't wrapped in revcat yet (project create, app CRUD, collaborators list). Tracked as enhancement issues.
 - A few endpoints don't exist on the v2 customer surface at all - documented at the bottom.
-- A small slice (project create, app CRUD, collaborators) isn't exposed by v2 REST.
 - RC v2 has no REST events firehose; lifecycle events are webhook-delivered. revcat exposes webhook CRUD; subscribe your own endpoint with `revcat webhooks create`.
 
 ## Coverage
@@ -23,7 +23,7 @@ Source of truth: <https://www.revenuecat.com/docs/api-v2>.
 | --- | --- |
 | `GET /projects` | `revcat projects list`, `revcat auth login` (picker) |
 | `GET /projects/{id}` | `revcat projects view` |
-| `POST /projects` | not in v2 REST (dashboard only) |
+| `POST /projects` | v2 endpoint exists; revcat wrap pending |
 
 ### Apps
 
@@ -33,7 +33,10 @@ Source of truth: <https://www.revenuecat.com/docs/api-v2>.
 | `GET /apps/{id}` | `revcat apps view` |
 | `GET /apps/{id}/public_api_keys` | `revcat apps public-keys` |
 | `GET /apps/{id}/store_kit_config` | `revcat apps storekit-config` |
-| `POST /apps`, `POST /apps/{id}`, `DELETE /apps/{id}` | not in v2 REST (dashboard only) |
+| `POST /apps` | v2 endpoint exists; revcat wrap pending |
+| `POST /apps/{id}` (update) | v2 endpoint exists; revcat wrap pending |
+| `DELETE /apps/{id}` | v2 endpoint exists; revcat wrap pending |
+| `GET /projects/{id}/collaborators` | v2 endpoint exists; revcat wrap pending |
 
 ### Customers
 
@@ -185,14 +188,6 @@ Source of truth: <https://www.revenuecat.com/docs/api-v2>.
 | `GET /metrics/overview` | `revcat metrics overview` |
 | `GET /charts/{name}` | `revcat charts get <name>` |
 | `GET /charts/{name}/options` | `revcat charts options <name>` |
-
-## Out of scope (not in v2 REST)
-
-The following endpoints have no v2 REST equivalent. Manage in the dashboard.
-
-- `POST /projects` - project create
-- App CRUD (`POST /apps`, `POST /apps/{id}`, `DELETE /apps/{id}`)
-- `GET /collaborators`
 
 ## Not exposed by v2 REST
 
