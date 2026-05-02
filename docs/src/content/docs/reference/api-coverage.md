@@ -10,8 +10,7 @@ Source of truth: <https://www.revenuecat.com/docs/api-v2>.
 
 ## Headline
 
-- Most v2 operations reachable with revcat's OAuth scope set are wrapped and smoke-tested.
-- A few v2 endpoints exist but aren't wrapped in revcat yet (project create, app CRUD, collaborators list). Tracked as enhancement issues.
+- Every v2 operation reachable with revcat's OAuth scope set is wrapped and smoke-tested.
 - A few endpoints don't exist on the v2 customer surface at all - documented at the bottom.
 - RC v2 has no REST events firehose; lifecycle events are webhook-delivered. revcat exposes webhook CRUD; subscribe your own endpoint with `revcat webhooks create`.
 
@@ -21,9 +20,9 @@ Source of truth: <https://www.revenuecat.com/docs/api-v2>.
 
 | API operation | revcat |
 | --- | --- |
-| `GET /projects` | `revcat projects list`, `revcat auth login` (picker) |
+| `GET /projects` | `revcat projects list` |
 | `GET /projects/{id}` | `revcat projects view` |
-| `POST /projects` | v2 endpoint exists; revcat wrap pending |
+| `POST /projects` | `revcat projects create` |
 
 ### Apps
 
@@ -33,10 +32,15 @@ Source of truth: <https://www.revenuecat.com/docs/api-v2>.
 | `GET /apps/{id}` | `revcat apps view` |
 | `GET /apps/{id}/public_api_keys` | `revcat apps public-keys` |
 | `GET /apps/{id}/store_kit_config` | `revcat apps storekit-config` |
-| `POST /apps` | v2 endpoint exists; revcat wrap pending |
-| `POST /apps/{id}` (update) | v2 endpoint exists; revcat wrap pending |
-| `DELETE /apps/{id}` | v2 endpoint exists; revcat wrap pending |
-| `GET /projects/{id}/collaborators` | v2 endpoint exists; revcat wrap pending |
+| `POST /apps` | `revcat apps create` |
+| `POST /apps/{id}` (update) | `revcat apps update` |
+| `DELETE /apps/{id}` | `revcat apps delete` |
+
+### Collaborators
+
+| API operation | revcat |
+| --- | --- |
+| `GET /projects/{id}/collaborators` | `revcat collaborators list` |
 
 ### Customers
 

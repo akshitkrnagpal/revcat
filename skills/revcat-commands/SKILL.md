@@ -41,11 +41,27 @@ Writes `revcat.toml` (committed: project_id + apps) and `.revcat/config.json` (g
 ```sh
 revcat projects list
 revcat projects view [<id>]                   # default: resolved project
+revcat projects create --name "My App"        # returns the new project_id
 
 revcat apps list
 revcat apps view <app_id>
 revcat apps public-keys <app_id>
 revcat apps storekit-config <app_id>          # raw JSON
+
+# Create: shortcut flags for the common platforms
+revcat apps create --type app_store --bundle com.acme.app --name "Acme iOS"
+revcat apps create --type play_store --package com.acme.app --name "Acme Android"
+# Anything else (stripe, rc_billing, paddle, roku, mac_app_store, optional fields)
+revcat apps create --file ./app.json   # or --file - for stdin
+
+# Update: --name shortcut, or --file for arbitrary fields. Send a nested
+# field as null in the JSON to clear it.
+revcat apps update <app_id> --name "renamed"
+revcat apps update <app_id> --file ./patch.json
+
+# Delete: hard delete. -y/--confirm to skip the prompt. Returns 409 if
+# the app has dependent resources.
+revcat apps delete <app_id> [-y]
 ```
 
 ## Catalog
@@ -149,6 +165,8 @@ revcat charts get <chart_name> [--start YYYY-MM-DD] [--end YYYY-MM-DD] \
     [--period day|week|month] [--filter k=v ...]
 
 revcat audit-logs list
+
+revcat collaborators list                # alias: members
 ```
 
 Valid chart names: `actives`, `actives_movement`, `actives_new`, `arr`, `churn`, `cohort_explorer`, `conversion_to_paying`, `customers_new`, `ltv_per_customer`, `ltv_per_paying_customer`, `mrr`, `mrr_movement`, `refund_rate`, `revenue`, `subscription_retention`, `subscription_status`, `trials`, `trials_movement`.

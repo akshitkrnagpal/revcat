@@ -20,7 +20,7 @@ Logs the full request and response (with the bearer token redacted).
 The login step or any later command got 401.
 
 - The OAuth token may have been revoked (Account Security UI in the RC dashboard) or the refresh token expired. Re-run `revcat auth login`.
-- If you're trying to call something the v2 REST API doesn't expose (project create, app CRUD, collaborators), you'll see 401/403/404. Those are out of scope for revcat.
+- If you're trying to call something the v2 REST API doesn't expose (project update/delete, an events firehose), you'll see 401/403/404. Those are out of scope.
 
 ## "this profile was created under v0.3 secret-key auth"
 
@@ -121,6 +121,6 @@ If the user reaches for the dashboard for one of these, that's expected. If they
 
 ## Where revcat does NOT work
 
-- Project create, app CRUD, collaborators - not exposed by the v2 REST API.
+- Project update or delete - v2 only exposes create + list.
 - An events firehose - RC delivers lifecycle events via webhooks (`revcat webhooks`), not a REST stream.
 - Anything not in `revcat <group> --help` - revcat tracks v2; v1-only endpoints are not wrapped (see above for the curl fallback).

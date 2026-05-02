@@ -67,7 +67,7 @@ When you `revcat init` inside a repo, it copies whichever profile is active at t
 
 Resources (CRUD + actions):
 
-- `projects` (list/view), `apps` (list/view + public-keys + storekit-config)
+- `projects` (list/view/create), `apps` (list/view + public-keys + storekit-config + create/update/delete), `collaborators` (list)
 - `entitlements`, `offerings`, `packages`, `products`, `paywalls`
 - `subscribers` (customers), `subscriptions`, `purchases`, `invoices`
 - `webhooks`, `virtual-currencies`
@@ -93,11 +93,9 @@ Auth + housekeeping:
 - `--pretty` - indent JSON
 - `-v / -q / --no-color / --debug`
 
-## What revcat does NOT cover (out of scope)
+## What revcat does NOT cover
 
-- `POST /projects` (project create) - not in v2 REST
-- App CRUD - not in v2 REST
-- `GET /collaborators` - not in v2 REST
+- Project update or delete - v2 has create + list only.
 - An events firehose - RC delivers lifecycle events via webhooks, not a REST stream. Use `revcat webhooks create` to register your endpoint.
 
 ## First useful commands
