@@ -34,7 +34,7 @@ func init() {
 
 var listCmd = &cobra.Command{
 	Use:   "list",
-	Short: "List projects accessible to the active secret key",
+	Short: "List projects accessible to this credential",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		client, _, err := cliutil.Client(cmd)
 		if err != nil {
@@ -56,7 +56,7 @@ var listCmd = &cobra.Command{
 
 var viewCmd = &cobra.Command{
 	Use:   "view [id]",
-	Short: "Show one project by id (defaults to the active profile's project)",
+	Short: "Show one project by id (defaults to the resolved project)",
 	Args:  cobra.RangeArgs(0, 1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		client, prof, err := cliutil.Client(cmd)

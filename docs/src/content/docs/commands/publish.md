@@ -1,15 +1,20 @@
 ---
 title: publish
-description: One-shot deploy verbs (offering, paywall, ...).
+description: One-shot deploy verbs (offering, paywall, ...)
 ---
 
-Publish-style verbs compose several API calls behind a single command. The intent is to mirror the dashboard's higher-level actions ("set as current", "deploy paywall") rather than mirror REST endpoints.
+Publish-style verbs compose several API calls behind a single command.
+The intent is to mirror the dashboard's higher-level actions ("set as
+current", "deploy paywall") rather than mirror REST endpoints.
 
 ## Subcommands
 
 | Command | Description |
 | --- | --- |
-| `publish offering <id>` | Set an offering as current and / or push a paywall config |
+| `publish offering <id>` | Set an offering as current and/or push a paywall config |
+
+Full flag reference: see [the CLI reference](/reference/cli/).
+<!-- AUTOGEN_END -->
 
 ## `publish offering` flags
 

@@ -1,9 +1,26 @@
 ---
 title: init
-description: Bootstrap project context (revcat.toml + .revcat/config.json) for the current directory.
+description: Bootstrap project context (revcat.toml + .revcat/config.json)
 ---
 
-`revcat init` binds the current directory to a RevenueCat project. Run it once per repo after `revcat auth login`. After init, every command run inside the directory inherits the project context — no `--project-id` flag, no env var, no keychain access required (agents and sandboxes can drop in and just work).
+Bind the current directory to a RevenueCat project. Writes:
+
+  - revcat.toml    (committed): project_id + optional apps
+  - .revcat/config.json (gitignored, mode 0600): credentials + project_id
+
+After init, every command run inside this directory inherits the project
+context. Agents and sandboxes that have access to the directory can run
+revcat without touching the user's keychain.
+
+Interactive (default): lists projects you can access, prompts for one,
+then optionally lists apps in that project and lets you tag them.
+
+Scripted: pass --project-id (and optional --app-id, repeated). Skip the
+apps block entirely with --no-apps. Skip the local creds copy with
+--no-local-creds (writes only revcat.toml).
+
+Full flag reference: see [the CLI reference](/reference/cli/).
+<!-- AUTOGEN_END -->
 
 ## What it writes
 

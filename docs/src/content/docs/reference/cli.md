@@ -1423,7 +1423,7 @@ revcat projects create [flags]
 
 ## `revcat projects list`
 
-List projects accessible to the active secret key
+List projects accessible to this credential
 
 **Usage**
 
@@ -1435,7 +1435,7 @@ revcat projects list
 
 ## `revcat projects view`
 
-Show one project by id (defaults to the active profile's project)
+Show one project by id (defaults to the resolved project)
 
 **Usage**
 

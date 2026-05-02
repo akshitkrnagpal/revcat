@@ -1,19 +1,28 @@
 ---
 title: projects
-description: Inspect and create RevenueCat projects.
+description: Inspect RevenueCat projects
 ---
 
-A project is RevenueCat's top-level container - one per app or app family. revcat resolves the active project from `--project-id`, `REVCAT_PROJECT_ID`, the local `.revcat/config.json` written by `revcat init`, or `revcat.toml`.
+A project is RevenueCat's top-level container - one per app or app
+family. revcat resolves the active project from --project-id,
+REVCAT_PROJECT_ID, the local .revcat/config.json written by
+`revcat init`, or revcat.toml.
 
-v2 exposes project create + list. There is no v2 update or delete by id; manage those in the dashboard.
+v2 exposes project create + list. There is no v2 update or delete by
+id; manage those in the dashboard.
 
 ## Subcommands
 
 | Command | Description |
 | --- | --- |
-| `projects list` | List projects accessible to the active credential |
-| `projects view [id]` | Show one project by id (defaults to the resolved project) |
-| `projects create --name <name>` | Create a new project at the account level |
+| `projects create` | Create a new project |
+| `projects list` | List projects accessible to this credential |
+| `projects view` | Show one project by id (defaults to the resolved project) |
+
+Aliases: `proj`.
+
+Full flag reference: see [the CLI reference](/reference/cli/).
+<!-- AUTOGEN_END -->
 
 ## Examples
 

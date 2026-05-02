@@ -1,21 +1,29 @@
 ---
 title: webhooks
-description: Manage webhook integrations.
+description: Manage webhook integrations
 ---
 
-Webhooks are project integrations that receive event POSTs (purchases, renewals, cancellations, refunds, ...). Each webhook has a name, target URL, and a list of `event_types` it subscribes to.
+Webhooks are project integrations that receive event POSTs (purchases,
+renewals, cancellations, refunds, ...). Each webhook has a name, target
+URL, and a list of event_types it subscribes to.
 
-Event values are LOWERCASE in the API config (`initial_purchase`, `renewal`, ...) - even though the webhook payload itself uses screaming case (`INITIAL_PURCHASE`). revcat lowercases values passed via `--events` for you, so either form works on the CLI.
+Event values are LOWERCASE in the API config (initial_purchase,
+renewal, cancellation, ...) - even though the webhook payload itself
+uses screaming case (INITIAL_PURCHASE). revcat lowercases values
+passed via --events for you.
 
 ## Subcommands
 
 | Command | Description |
 | --- | --- |
+| `webhooks create` | Create a webhook integration |
+| `webhooks delete <id>` | Delete a webhook |
 | `webhooks list` | List webhook integrations |
+| `webhooks update <id>` | Update a webhook |
 | `webhooks view <id>` | Show one webhook |
-| `webhooks create` | Create (`--name --url --events` or `--file`) |
-| `webhooks update <id>` | Update (`--name --url --events` or `--file`) |
-| `webhooks delete <id>` | Delete |
+
+Full flag reference: see [the CLI reference](/reference/cli/).
+<!-- AUTOGEN_END -->
 
 ## `webhooks create` flags
 

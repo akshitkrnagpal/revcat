@@ -1,21 +1,30 @@
 ---
 title: apps
-description: Manage RevenueCat apps (per-platform inside a project).
+description: Manage RevenueCat apps (per-platform inside a project)
 ---
 
-Each project has one app per platform/storefront (one for iOS, one for Android, etc.). v2 exposes the full lifecycle: create, update, delete, plus reads.
+Each project has one app per platform/storefront (one for iOS, one for
+Android, etc.).
+
+Read commands `list`, `view`, `public-keys`, `storekit-config` work on
+any app. Write commands `create`, `update`, `delete` use the v2 app
+endpoints; pass `--file <path>` for any non-trivial body since the
+schema is wide and storefront-specific.
 
 ## Subcommands
 
 | Command | Description |
 | --- | --- |
+| `apps create` | Create an app under the active project |
+| `apps delete <app_id>` | Delete an app (hard delete) |
 | `apps list` | List apps in the active project |
-| `apps view <id>` | Show one app |
 | `apps public-keys <app_id>` | List the public SDK keys for an app |
-| `apps storekit-config <app_id>` | Print the StoreKit configuration for an iOS app (raw JSON) |
-| `apps create` | Create an app (`--type` shortcut for the common platforms, `--file` for the rest) |
-| `apps update <app_id>` | Update an app (POST at the same path as GET; `--name` shortcut, `--file` for arbitrary fields) |
-| `apps delete <app_id>` | Delete an app (hard delete; can 409 if dependent resources exist) |
+| `apps storekit-config <app_id>` | Print the StoreKit configuration for an iOS app |
+| `apps update <app_id>` | Update an app |
+| `apps view <id>` | Show one app |
+
+Full flag reference: see [the CLI reference](/reference/cli/).
+<!-- AUTOGEN_END -->
 
 ## Read examples
 

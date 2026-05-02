@@ -1,31 +1,31 @@
 ---
 title: subscribers
-description: Inspect and manage RevenueCat subscribers (a.k.a. customers, app users).
+description: Inspect and manage RevenueCat subscribers
 ---
 
-Subscribers (a.k.a. customers, app users) are the end-users of your app. revcat treats them as the unit of debugging - one command surfaces their entitlements, subscriptions, purchases, and aliases in a single card.
+Subscribers (a.k.a. customers, app users) are the end-users of your app.
+revcat treats them as the unit of debugging - one command surfaces their
+entitlements, subscriptions, purchases, and aliases in a single card.
 
 ## Subcommands
 
-### Inspect
-
 | Command | Description |
 | --- | --- |
-| `subscribers info <user_id>` | Full debug card: entitlements, subs, purchases, aliases, attribution |
-| `subscribers list` | List customers in the active project (paged) |
-| `subscribers attributes <user_id>` | Get / set subscriber attributes |
-| `subscribers invoices <user_id>` | List invoices for a customer |
-
-### Manage
-
-| Command | Description |
-| --- | --- |
+| `subscribers attributes <user_id>` | Get or set subscriber attributes |
 | `subscribers create <user_id>` | Pre-create a customer (migration / import) |
-| `subscribers delete <user_id>` | Permanently delete (GDPR / test cleanup) |
-| `subscribers transfer <src> <dst>` | Move entitlements / subscriptions between customers |
-| `subscribers grant <user> <ent>` | Grant a promotional entitlement (`-d 7d`) |
-| `subscribers revoke <user> <ent>` | Expire a promotional entitlement (sets expires_at to ~now) |
-| `subscribers refund <sub_id> <txn_id>` | Refund a transaction on a subscription |
+| `subscribers delete <user_id>` | Permanently delete a customer (GDPR / test cleanup) |
+| `subscribers grant <user_id> <entitlement>` | Grant a promotional entitlement to a subscriber |
+| `subscribers info <user_id>` | Show a full debug card for a subscriber |
+| `subscribers invoices <user_id>` | List invoices for a customer |
+| `subscribers list` | List customers in the active project (paged) |
+| `subscribers refund <subscription_id> <transaction_id>` | Refund a transaction on a subscription |
+| `subscribers revoke <user_id> <entitlement>` | Revoke a promotional entitlement from a subscriber |
+| `subscribers transfer <src_user_id> <dst_user_id>` | Transfer entitlements/subscriptions from one customer to another |
+
+Aliases: `customers`, `subs`.
+
+Full flag reference: see [the CLI reference](/reference/cli/).
+<!-- AUTOGEN_END -->
 
 ## Examples
 

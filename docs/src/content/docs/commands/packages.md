@@ -1,24 +1,28 @@
 ---
 title: packages
-description: Manage RevenueCat packages (purchasables inside an offering).
+description: Manage RevenueCat packages (purchasables inside an offering)
 ---
 
-Packages are the purchasable units inside an offering. Lookup_keys follow RC's `$rc_monthly` / `$rc_annual` / custom convention.
-
-Packages live under offerings, so create takes `<offering>` as a positional argument. Once created, a package has its own `pkg...` system id that other commands use.
+Packages are the purchasable units inside an offering. Identifiers
+follow RC's $rc_monthly / $rc_annual / custom convention.
 
 ## Subcommands
 
 | Command | Description |
 | --- | --- |
-| `packages list [--offering <id>]` | List packages across one offering or all |
-| `packages view <pkg_id>` | Show one package by system id |
-| `packages create <offering>` | Create a package under an offering (`--id --display-name --position` or `--file`) |
-| `packages update <pkg_id>` | Update a package (`--file`) |
-| `packages delete <pkg_id>` | Delete a package |
-| `packages products <pkg_id>` | List products attached to a package |
-| `packages attach <pkg_id> <product_id> [...]` | Attach product(s) to a package |
-| `packages detach <pkg_id> <product_id> [...]` | Detach product(s) from a package |
+| `packages attach <pkg_id> <product_id> [<product_id> ...]` | Attach product(s) to a package |
+| `packages create <offering>` | Create a package under an offering |
+| `packages delete <id>` | Delete a package |
+| `packages detach <id> <product_id> [<product_id> ...]` | Detach product(s) from a package |
+| `packages list` | List packages across one offering or all offerings |
+| `packages products <id>` | List products attached to a package |
+| `packages update <id>` | Update a package |
+| `packages view <id>` | Show one package by internal id |
+
+Aliases: `pkg`.
+
+Full flag reference: see [the CLI reference](/reference/cli/).
+<!-- AUTOGEN_END -->
 
 ## Examples
 

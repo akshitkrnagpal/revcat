@@ -1,24 +1,33 @@
 ---
 title: products
-description: Manage RevenueCat products (store SKUs).
+description: Manage RevenueCat products (store SKUs)
 ---
 
-A product is a project-level catalog entry that mirrors a store SKU (App Store / Play Store / Stripe / Web Billing). Products are attached to packages, packages live inside offerings.
+A product is a project-level catalog entry that mirrors a store SKU
+(App Store / Play Store / Stripe / Web Billing). Products are attached
+to packages, packages live inside offerings.
 
-Most edits accept a JSON file via `--file`, since the product schema differs per store and revcat does not pin a specific shape. Use the [v2 docs](https://www.revenuecat.com/docs/api-v2) to author the body, then `revcat products create -f product.json`.
+Most edits accept a JSON file via --file, since the product schema
+differs per store and revcat does not pin a specific shape. Use the
+v2 docs to author the body, then `revcat products create -f product.json`.
 
 ## Subcommands
 
 | Command | Description |
 | --- | --- |
+| `products archive <id>` | Archive a product |
+| `products create` | Create a product from a JSON body |
+| `products delete <id>` | Delete a product (most teams should archive instead) |
 | `products list` | List products |
-| `products view <id>` | Show one product |
-| `products create` | Create a product from a JSON body (`--file`, required) |
-| `products update <id>` | Update a product (`--file`, or `--display-name`) |
-| `products delete <id>` | Delete (most teams should archive instead) |
-| `products archive <id>` | Archive |
-| `products unarchive <id>` | Unarchive |
 | `products push-to-store <id>` | Push a product config to the linked store |
+| `products unarchive <id>` | Unarchive a product |
+| `products update <id>` | Update a product |
+| `products view <id>` | Show one product |
+
+Aliases: `prod`.
+
+Full flag reference: see [the CLI reference](/reference/cli/).
+<!-- AUTOGEN_END -->
 
 ## Examples
 

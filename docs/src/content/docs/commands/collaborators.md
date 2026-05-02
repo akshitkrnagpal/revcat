@@ -1,17 +1,23 @@
 ---
 title: collaborators
-description: Inspect project collaborators (members).
+description: Inspect project collaborators (members)
 ---
 
 List the people with access to the active RevenueCat project.
 
-Read-only: v2 doesn't expose invite / role-change / remove via REST. Manage membership in the [dashboard](https://app.revenuecat.com).
+Read-only: v2 doesn't expose invite / role-change / remove via REST.
+Manage membership in the dashboard.
 
 ## Subcommands
 
 | Command | Description |
 | --- | --- |
 | `collaborators list` | List collaborators on the active project |
+
+Aliases: `members`.
+
+Full flag reference: see [the CLI reference](/reference/cli/).
+<!-- AUTOGEN_END -->
 
 ## Examples
 

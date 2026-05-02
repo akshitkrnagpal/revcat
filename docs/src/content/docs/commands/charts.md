@@ -1,16 +1,21 @@
 ---
 title: charts
-description: Project charts (revenue, active subs, conversion, ...).
+description: Project charts (revenue, active subs, conversion, etc.)
 ---
 
-Charts mirror the dashboard graphs: revenue, active subscribers, conversion, MRR, churn, etc. Run `revcat charts options <name>` for the supported filters before requesting data.
+Charts mirror the dashboard graphs: revenue, active subscribers,
+conversion, MRR, churn, etc. Run `revcat charts options <name>` for
+the supported filters before requesting data.
 
 ## Subcommands
 
 | Command | Description |
 | --- | --- |
-| `charts get <name>` | Fetch chart data (raw JSON) |
-| `charts options <name>` | Show the available filters / dimensions for a chart |
+| `charts get <chart_name>` | Fetch chart data (raw JSON) |
+| `charts options <chart_name>` | Show the available filters/dimensions for a chart |
+
+Full flag reference: see [the CLI reference](/reference/cli/).
+<!-- AUTOGEN_END -->
 
 ## `charts get` flags
 

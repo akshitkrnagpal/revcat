@@ -1,7 +1,9 @@
 ---
 title: invoices
-description: Inspect invoices.
+description: Inspect invoices
 ---
+
+Inspect invoices
 
 ## Subcommands
 
@@ -9,7 +11,8 @@ description: Inspect invoices.
 | --- | --- |
 | `invoices view <id>` | Show one invoice (raw JSON) |
 
-To list invoices for a specific customer use [`revcat subscribers invoices <user_id>`](/commands/subscribers/).
+Full flag reference: see [the CLI reference](/reference/cli/).
+<!-- AUTOGEN_END -->
 
 ## Example
 

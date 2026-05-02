@@ -1,29 +1,13 @@
 ---
 title: doctor
-description: Run a top-level health check.
+description: Run a top-level health check
 ---
 
-`revcat doctor` walks the most common breakage points in one shot: platform, build version, credential store reachable, active profile resolves, API reachable.
+Run a top-level health check
 
-```sh
-revcat doctor
-```
+Full flag reference: see [the CLI reference](/reference/cli/).
+<!-- AUTOGEN_END -->
 
-Sample output:
+## Examples
 
-```
-status  check             detail
-OK      platform          darwin/arm64 go1.26.2
-OK      revcat            0.0.1-dev
-OK      credential store  keychain
-OK      active profile    default
-OK     api reach         ok, 2 project access
-```
-
-Pipe to JSON to script against the result:
-
-```sh
-revcat doctor --output json | jq '.[] | select(.status == "FAIL")'
-```
-
-For auth-specific diagnostics use `revcat auth doctor` instead.
+Add hand-written examples and conceptual notes below. Anything below the `AUTOGEN_END` marker is preserved across regenerations.
