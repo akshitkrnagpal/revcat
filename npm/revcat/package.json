@@ -1,0 +1,36 @@
+{
+  "name": "revcat",
+  "version": "0.0.0",
+  "description": "The RevenueCat CLI - manage RevenueCat projects from the terminal",
+  "homepage": "https://github.com/akshitkrnagpal/revcat",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/akshitkrnagpal/revcat.git"
+  },
+  "bugs": "https://github.com/akshitkrnagpal/revcat/issues",
+  "license": "MIT",
+  "author": "Akshit Kr Nagpal",
+  "keywords": [
+    "revenuecat",
+    "cli",
+    "subscriptions",
+    "iap",
+    "in-app-purchases"
+  ],
+  "bin": {
+    "revcat": "bin/revcat"
+  },
+  "files": [
+    "bin/revcat"
+  ],
+  "optionalDependencies": {
+    "revcat-darwin-arm64": "0.0.0",
+    "revcat-darwin-x64": "0.0.0",
+    "revcat-linux-arm64": "0.0.0",
+    "revcat-linux-x64": "0.0.0",
+    "revcat-win32-x64": "0.0.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
