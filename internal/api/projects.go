@@ -147,6 +147,65 @@ func (c *Client) GetAppRaw(ctx context.Context, appID string) (*App, json.RawMes
 	return &a, raw, nil
 }
 
+// CreateApp creates a new app under the active project.
+//
+// v2: POST /v2/projects/{project_id}/apps,
+// scope project_configuration:apps:read_write.
+//
+// The body is discriminated by `type`. revcat passes through whatever
+// the caller assembles so we don't have to track every storefront's
+// nested-config shape (it's wide). The minimum body for the common
+// platforms:
+//
+//   - app_store:    {"name":"...","type":"app_store","app_store":{"bundle_id":"com.acme.app"}}
+//   - play_store:   {"name":"...","type":"play_store","play_store":{"package_name":"com.acme.app"}}
+//   - amazon:       {"name":"...","type":"amazon","amazon":{"package_name":"com.acme.app"}}
+//   - stripe:       {"name":"...","type":"stripe","stripe":{"stripe_account_id":"acct_..."}}
+//   - rc_billing:   {"name":"...","type":"rc_billing","rc_billing":{...optional fields}}
+//
+// Returns the created App.
+func (c *Client) CreateApp(ctx context.Context, body map[string]any) (*App, error) {
+	if err := c.requireProject(); err != nil {
+		return nil, err
+	}
+	var out App
+	if err := c.Do(ctx, "POST", c.projectPath("/apps"), body, &out); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+// UpdateApp updates an existing app. v2 uses POST (not PATCH) at the
+// same path as GET. Body is the same shape as CreateApp but without
+// `type`, and all fields optional. Send a nested field as `null` to
+// clear it (e.g. {"app_store":{"shared_secret":null}}).
+//
+// v2: POST /v2/projects/{project_id}/apps/{app_id},
+// scope project_configuration:apps:read_write.
+func (c *Client) UpdateApp(ctx context.Context, appID string, body map[string]any) (*App, error) {
+	if err := c.requireProject(); err != nil {
+		return nil, err
+	}
+	var out App
+	path := c.projectPath("/apps/" + url.PathEscape(appID))
+	if err := c.Do(ctx, "POST", path, body, &out); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+// DeleteApp deletes an app. Hard delete; can return 409 if the app
+// has dependent resources (offerings, products, etc.).
+//
+// v2: DELETE /v2/projects/{project_id}/apps/{app_id},
+// scope project_configuration:apps:read_write.
+func (c *Client) DeleteApp(ctx context.Context, appID string) error {
+	if err := c.requireProject(); err != nil {
+		return err
+	}
+	return c.Do(ctx, "DELETE", c.projectPath("/apps/"+url.PathEscape(appID)), nil, nil)
+}
+
 // ListPublicAPIKeys returns the SDK-side keys for an app.
 func (c *Client) ListPublicAPIKeys(ctx context.Context, appID string) ([]PublicAPIKey, error) {
 	if err := c.requireProject(); err != nil {

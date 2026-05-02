@@ -10,7 +10,7 @@ revcat is organized by RevenueCat resource: customers, offerings, paywalls, etc.
 | Group | Reads | Writes |
 | --- | --- | --- |
 | [`projects`](/commands/projects/) | `list`, `view` | `create` |
-| [`apps`](/commands/apps/) | `list`, `view`, `public-keys`, `storekit-config` | - |
+| [`apps`](/commands/apps/) | `list`, `view`, `public-keys`, `storekit-config` | `create`, `update`, `delete` |
 | [`entitlements`](/commands/entitlements/) | `list`, `view`, `products` | `create`, `update`, `delete`, `archive`, `unarchive`, `attach`, `detach` |
 | [`offerings`](/commands/offerings/) | `list`, `view`, `preview` | `create`, `update`, `delete`, `archive`, `unarchive`, `set-current` |
 | [`packages`](/commands/packages/) | `list`, `view`, `products` | `create`, `update`, `delete`, `attach`, `detach` |
