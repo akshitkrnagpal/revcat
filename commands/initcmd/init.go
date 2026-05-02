@@ -10,7 +10,7 @@
 //   - .revcat/config.json (gitignored, mode 0600): credential half plus
 //     project_id and apps. Walked up from cwd by every revcat command
 //     so an agent inside the directory can run without touching the
-//     user's keychain.
+//     global ~/.revcat/config.json.
 //
 // Also appends ".revcat/" to .gitignore (idempotent), creating it if
 // missing.
@@ -54,7 +54,7 @@ var Cmd = &cobra.Command{
 
 After init, every command run inside this directory inherits the project
 context. Agents and sandboxes that have access to the directory can run
-revcat without touching the user's keychain.
+revcat without touching the global ~/.revcat/config.json.
 
 Interactive (default): lists projects you can access, prompts for one,
 then optionally lists apps in that project and lets you tag them.

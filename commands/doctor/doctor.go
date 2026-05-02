@@ -1,8 +1,7 @@
 // Package doctor implements `revcat doctor` - the top-level health check.
 //
 // `revcat auth doctor` is auth-specific. This command is a higher-level
-// summary: keychain reachable, profile resolves, API responds, project
-// binding valid.
+// summary: profile resolves, API responds, project binding valid.
 package doctor
 
 import (
@@ -30,17 +29,11 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 		{"OK", "revcat", cmd.Root().Version},
 	}
 
-	storeName := "keychain"
-	if cliutil.BypassKeychain(cmd) {
-		storeName = "local file"
-	}
-
 	client, resolved, err := cliutil.Client(cmd)
 	if err != nil {
 		rows = append(rows, []any{"FAIL", "credential resolve", err.Error()})
 		return output.Table([]string{"status", "check", "detail"}, rows)
 	}
-	rows = append(rows, []any{"OK", "credential store", storeName})
 	rows = append(rows, []any{"OK", "active credential", fmt.Sprintf("%s (source=%s)", resolved.Profile.Name, resolved.Source)})
 
 	ctx, cancel := context.WithTimeout(cmd.Context(), 10*time.Second)

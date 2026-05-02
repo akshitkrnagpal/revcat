@@ -60,7 +60,6 @@ Available on every command:
 | --- | --- |
 | `--profile <name>` | Global auth profile to use (default: `REVCAT_PROFILE` env or `default`). Ignored when a `.revcat/config.json` is walked up from cwd. |
 | `--project-id <id>` | RevenueCat project id (default: `REVCAT_PROJECT_ID`, walked-up `.revcat/config.json`, or `revcat.toml`) |
-| `--bypass-keychain` | Use `~/.revcat/config.json` (file backend) instead of the OS keychain |
 | `--output table\|json\|csv\|markdown` | Force an output format. Auto-detected when omitted (table on TTY, JSON when piped) |
 | `--pretty` | Indent JSON output |
 | `-v, --verbose` | Show detailed output |

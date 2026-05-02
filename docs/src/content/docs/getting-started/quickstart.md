@@ -9,9 +9,7 @@ description: Sign in and run your first command in 60 seconds.
 revcat auth login
 ```
 
-revcat opens your browser for the OAuth flow, you authorize against RevenueCat, and the tokens land in your OS keychain.
-
-For Linux containers without secret-service, pass `--bypass-keychain` (or set `REVCAT_BYPASS_KEYCHAIN=1`) to write to `~/.revcat/config.json` instead.
+revcat opens your browser for the OAuth flow, you authorize against RevenueCat, and the tokens land in `~/.revcat/config.json` (mode 0600).
 
 ## 2. Bind a project to your repo
 
@@ -23,7 +21,7 @@ revcat init
 `revcat init` lists projects you can access, prompts for one (and optionally apps), then writes:
 
 - `revcat.toml` (committed): records `project_id` + apps so a `git clone` documents which RC project this repo belongs to.
-- `.revcat/config.json` (gitignored, mode 0600): copies your credential into the directory so subsequent commands and any agent or sandbox in the directory inherit it without keychain access.
+- `.revcat/config.json` (gitignored, mode 0600): copies your credential into the directory so subsequent commands and any agent or sandbox in the directory inherit it without touching `~/.revcat/config.json`.
 
 `.revcat/` is auto-appended to `.gitignore`.
 
@@ -69,7 +67,7 @@ export REVCAT_PROJECT_ID=proj_...
 revcat offerings list
 ```
 
-revcat synthesizes a virtual profile, refreshes tokens in-memory, and skips both keychain and login flow. Pull the refresh token from your CI secret manager.
+revcat synthesizes a virtual profile, refreshes tokens in-memory, and skips the login flow entirely. Pull the refresh token from your CI secret manager.
 
 ## Where to go next
 

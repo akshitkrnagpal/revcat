@@ -4,21 +4,19 @@ description: Manage RevenueCat authentication
 ---
 
 revcat authenticates against RevenueCat via OAuth. One browser login
-populates a global profile in your OS keychain; a per-repo
+writes the credential to ~/.revcat/config.json (mode 0600). A per-repo
 .revcat/config.json (written by `revcat init`) carries that credential
-into the directory so agents and sandboxes work without keychain access.
+into the directory so agents and sandboxes inside the directory inherit
+it without touching the global file.
 
 Most users only need:
 
-    revcat auth login            # browser OAuth, saves to keychain
-    cd ~/your/repo && revcat init   # bind this repo to a project
+    revcat auth login                # browser OAuth
+    cd ~/your/repo && revcat init    # bind this repo to a project
     revcat auth status
 
-For Linux containers without secret-service, pass --bypass-keychain
-(or set REVCAT_BYPASS_KEYCHAIN=1) to use ~/.revcat/config.json instead.
-
 For CI / fresh sandboxes with no browser: set REVCAT_REFRESH_TOKEN
-(and REVCAT_PROJECT_ID) to skip both keychain and login flow.
+(and REVCAT_PROJECT_ID) to skip both file and login flow.
 
 ## Subcommands
 
@@ -38,8 +36,7 @@ Full flag reference: see [the CLI reference](/reference/cli/).
 
 | Tier | Path | Used when |
 | --- | --- | --- |
-| keychain | OS keychain | default for `auth login` |
-| global file | `~/.revcat/config.json` | `--bypass-keychain` or `REVCAT_BYPASS_KEYCHAIN=1` |
+| global file | `~/.revcat/config.json` (mode 0600) | written by `revcat auth login` |
 | local file | `./.revcat/config.json` (walked up from cwd) | written by `revcat init` |
 
 Resolution order: `REVCAT_REFRESH_TOKEN` env > walked-up local file > global active profile.
@@ -82,7 +79,7 @@ Credential:
 
 1. `REVCAT_REFRESH_TOKEN` env (synthesizes a virtual profile)
 2. Walked-up `./.revcat/config.json`
-3. Global keychain or `~/.revcat/config.json` for the active profile
+3. `~/.revcat/config.json` for the active profile
 
 Active global profile name: `--profile <name>` flag > `REVCAT_PROFILE` env > `~/.revcat/active` (set by `auth use`) > `default`.
 

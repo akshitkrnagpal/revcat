@@ -19,8 +19,8 @@ var (
 var logoutCmd = &cobra.Command{
 	Use:   "logout [<profile>]",
 	Short: "Remove a stored auth profile",
-	Long: `Delete a stored auth profile from the keychain (or local file). Pass
---all to wipe every profile.`,
+	Long: `Delete a stored auth profile from ~/.revcat/config.json. Pass --all
+to wipe every profile.`,
 	RunE: runLogout,
 }
 
@@ -30,7 +30,7 @@ func init() {
 }
 
 func runLogout(cmd *cobra.Command, args []string) error {
-	store, err := authstore.OpenGlobal(bypassKeychain(cmd))
+	store, err := authstore.OpenGlobal()
 	if err != nil {
 		return err
 	}

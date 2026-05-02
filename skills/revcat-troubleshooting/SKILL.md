@@ -40,7 +40,7 @@ There is no credential to use.
 - Already logged in elsewhere? Check what's set: `revcat auth list`.
 - Switch global profiles with `revcat auth use <name>` or per-command `--profile <name>`.
 - Inside a repo: `revcat init` writes a `.revcat/config.json` so subsequent commands in that directory pick it up automatically.
-- In CI: set `REVCAT_REFRESH_TOKEN=rtk_...` and `REVCAT_PROJECT_ID=proj_...`, or pass `--bypass-keychain` and ship a populated `~/.revcat/config.json`.
+- In CI: set `REVCAT_REFRESH_TOKEN=rtk_...` and `REVCAT_PROJECT_ID=proj_...`, or ship a populated `~/.revcat/config.json` (mode 0600).
 
 ## "no project_id resolved" / project context missing
 

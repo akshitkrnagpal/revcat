@@ -204,21 +204,19 @@ Manage RevenueCat authentication
 
 ```text
 revcat authenticates against RevenueCat via OAuth. One browser login
-populates a global profile in your OS keychain; a per-repo
+writes the credential to ~/.revcat/config.json (mode 0600). A per-repo
 .revcat/config.json (written by `revcat init`) carries that credential
-into the directory so agents and sandboxes work without keychain access.
+into the directory so agents and sandboxes inside the directory inherit
+it without touching the global file.
 
 Most users only need:
 
-    revcat auth login            # browser OAuth, saves to keychain
-    cd ~/your/repo && revcat init   # bind this repo to a project
+    revcat auth login                # browser OAuth
+    cd ~/your/repo && revcat init    # bind this repo to a project
     revcat auth status
 
-For Linux containers without secret-service, pass --bypass-keychain
-(or set REVCAT_BYPASS_KEYCHAIN=1) to use ~/.revcat/config.json instead.
-
 For CI / fresh sandboxes with no browser: set REVCAT_REFRESH_TOKEN
-(and REVCAT_PROJECT_ID) to skip both keychain and login flow.
+(and REVCAT_PROJECT_ID) to skip both file and login flow.
 ```
 
 **Usage**
@@ -269,12 +267,9 @@ Run the browser OAuth flow and store the resulting tokens. The OAuth
 client is RevenueCat's public PKCE client by default; override with
 REVCAT_OAUTH_CLIENT_ID or --client-id.
 
-Tokens are written to your OS keychain. Pass --bypass-keychain (or set
-REVCAT_BYPASS_KEYCHAIN=1) to use ~/.revcat/config.json (HOME) instead,
-useful on Linux without secret-service or in containers.
-
-After login, run `revcat init` inside your project directory to bind
-a project_id (or set REVCAT_PROJECT_ID per command).
+Tokens are written to ~/.revcat/config.json (mode 0600). After login,
+run `revcat init` inside your project directory to bind a project_id
+(or set REVCAT_PROJECT_ID per command).
 
 Examples:
   revcat auth login                          # browser, default profile
@@ -304,8 +299,8 @@ revcat auth login [flags]
 Remove a stored auth profile
 
 ```text
-Delete a stored auth profile from the keychain (or local file). Pass
---all to wipe every profile.
+Delete a stored auth profile from ~/.revcat/config.json. Pass --all
+to wipe every profile.
 ```
 
 **Usage**
@@ -329,7 +324,7 @@ Show the active auth profile and resolved project
 
 ```text
 Print the active credential and where it came from (local
-.revcat/config.json, global keychain, file backend, or env hatch). Pass
+.revcat/config.json, global ~/.revcat/config.json, or env hatch). Pass
 --validate to also hit the RevenueCat API and confirm the token is
 accepted.
 ```
@@ -656,7 +651,7 @@ Bind the current directory to a RevenueCat project. Writes:
 
 After init, every command run inside this directory inherits the project
 context. Agents and sandboxes that have access to the directory can run
-revcat without touching the user's keychain.
+revcat without touching the global ~/.revcat/config.json.
 
 Interactive (default): lists projects you can access, prompts for one,
 then optionally lists apps in that project and lets you tag them.

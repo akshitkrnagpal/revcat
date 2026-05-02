@@ -10,7 +10,7 @@ import (
 // resolution short-circuits and returns a virtual profile carrying just
 // the refresh token; callers refresh it on first API call to get a
 // usable access token. Pair with REVCAT_PROJECT_ID to skip both
-// keychain and walk-up file lookup.
+// the file backend and walk-up file lookup.
 const envRefreshToken = "REVCAT_REFRESH_TOKEN"
 
 // envClientIDForToken lets the env hatch override the OAuth client_id
@@ -22,11 +22,10 @@ const envClientIDForToken = "REVCAT_OAUTH_CLIENT_ID"
 type Source string
 
 const (
-	SourceLocal       Source = "local"
-	SourceKeychain    Source = "keychain"
-	SourceGlobalFile  Source = "file"
-	SourceEnv         Source = "env"
-	SourceUnknown     Source = "unknown"
+	SourceLocal      Source = "local"
+	SourceGlobalFile Source = "file"
+	SourceEnv        Source = "env"
+	SourceUnknown    Source = "unknown"
 )
 
 // Resolved is the unified output of credential resolution: which
@@ -39,7 +38,7 @@ type Resolved struct {
 	Source    Source
 
 	// Path is set for SourceLocal (the .revcat/config.json path) and
-	// SourceGlobalFile (~/.revcat/config.json). Empty otherwise.
+	// SourceGlobalFile (~/.revcat/config.json). Empty for SourceEnv.
 	Path string
 
 	// Local is the loaded LocalConfig when Source == SourceLocal.
@@ -48,21 +47,19 @@ type Resolved struct {
 	Local *LocalConfig
 }
 
-// ResolveOptions tweaks resolution. Bypass forces the file backend.
-// FlagProfile is the value of the global --profile flag (used only
-// when no local config or env hatch wins).
+// ResolveOptions tweaks resolution. FlagProfile is the value of the
+// global --profile flag (used only when no local config or env hatch
+// wins).
 type ResolveOptions struct {
-	Bypass      bool
 	FlagProfile string
 	Cwd         string
 }
 
 // Resolve walks the precedence chain and returns the active credential.
 //
-//	1. REVCAT_REFRESH_TOKEN env (synthesizes a Profile, no on-disk state)
-//	2. ./.revcat/config.json walked up from cwd
-//	3. Global keychain or ~/.revcat/config.json (file backend) for the
-//	   active profile name
+//  1. REVCAT_REFRESH_TOKEN env (synthesizes a Profile, no on-disk state)
+//  2. ./.revcat/config.json walked up from cwd
+//  3. ~/.revcat/config.json (mode 0600) for the active profile name
 func Resolve(opts ResolveOptions) (*Resolved, error) {
 	if v := os.Getenv(envRefreshToken); v != "" {
 		return &Resolved{
@@ -98,7 +95,7 @@ func Resolve(opts ResolveOptions) (*Resolved, error) {
 		return nil, err
 	}
 
-	store, err := OpenGlobal(opts.Bypass)
+	store, err := OpenGlobal()
 	if err != nil {
 		return nil, err
 	}
@@ -125,18 +122,13 @@ func Resolve(opts ResolveOptions) (*Resolved, error) {
 		}
 	}
 
-	source := SourceKeychain
 	path := ""
-	if opts.Bypass || os.Getenv(envBypassKeychain) == "1" {
-		source = SourceGlobalFile
-		if home, herr := os.UserHomeDir(); herr == nil {
-			path = home + "/" + globalFileName
-		}
+	if home, herr := os.UserHomeDir(); herr == nil {
+		path = home + "/" + globalFileName
 	}
 	return &Resolved{
-		Profile:   prof,
-		ProjectID: "",
-		Source:    source,
-		Path:      path,
+		Profile: prof,
+		Source:  SourceGlobalFile,
+		Path:    path,
 	}, nil
 }

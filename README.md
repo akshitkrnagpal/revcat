@@ -10,7 +10,7 @@ The RevenueCat CLI. Run your RevenueCat project from the terminal instead of cli
 ![revcat demo](./demo/demo.gif)
 
 ```sh
-revcat auth login                        # browser OAuth, saves to keychain
+revcat auth login                        # browser OAuth, saves to ~/.revcat/config.json
 cd ~/your-repo && revcat init            # bind this repo to a project
 revcat subscribers info app_user_123
 revcat metrics overview
@@ -36,7 +36,7 @@ Pre-built binaries for every platform are on the [Releases page](https://github.
 
 ## Auth
 
-revcat authenticates against RevenueCat via OAuth (PKCE). One browser login populates a global profile in your OS keychain; running `revcat init` inside a repo writes a per-directory `.revcat/config.json` (gitignored, mode 0600) so agents and sandboxes operating in that directory inherit the credential without keychain access.
+revcat authenticates against RevenueCat via OAuth (PKCE). One browser login writes a global profile to `~/.revcat/config.json` (mode 0600); running `revcat init` inside a repo writes a per-directory `.revcat/config.json` (gitignored, mode 0600) so agents and sandboxes operating in that directory inherit the credential without touching the global file.
 
 ```sh
 revcat auth login                        # browser OAuth
@@ -49,8 +49,7 @@ revcat auth doctor                       # diagnose
 
 | Tier | Path | Used when |
 | --- | --- | --- |
-| keychain | OS keychain | default for `auth login` |
-| global file | `~/.revcat/config.json` | `--bypass-keychain` or `REVCAT_BYPASS_KEYCHAIN=1` |
+| global file | `~/.revcat/config.json` (mode 0600) | written by `revcat auth login` |
 | local file | `./.revcat/config.json` (walked up) | written by `revcat init` |
 
 Resolution: `REVCAT_REFRESH_TOKEN` env > walked-up local file > global active profile.
@@ -72,7 +71,7 @@ export REVCAT_PROJECT_ID=proj_...
 revcat offerings list
 ```
 
-revcat synthesizes a virtual profile, refreshes tokens in-memory, no keychain or login flow. Pull the refresh token from your CI secret manager.
+revcat synthesizes a virtual profile, refreshes tokens in-memory, no login flow. Pull the refresh token from your CI secret manager.
 
 ## Command surface
 
