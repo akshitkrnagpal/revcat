@@ -20,7 +20,7 @@ Output init.gif
 Set Shell "zsh"
 Set FontSize 18
 Set Width 1280
-Set Height 560
+Set Height 700
 Set Theme "Catppuccin Mocha"
 Set Padding 24
 Set TypingSpeed 35ms
@@ -58,11 +58,19 @@ Sleep 200ms
 Enter
 Sleep 1500ms
 
-# 4. Project context is now automatic. No --project-id, no env, just
-#    works from cwd.
-Type "revcat auth status"
+# 4. The agent / sandbox proof. Wipe the env vars revcat used to auth
+#    in the first place, then run a project-scoped command. It still
+#    works - the walked-up .revcat/config.json carries credentials
+#    plus project_id, so any process started in this directory inherits
+#    both without touching the global file.
+Type "unset REVCAT_REFRESH_TOKEN REVCAT_PROJECT_ID"
 Sleep 200ms
 Enter
-Sleep 2000ms
+Sleep 600ms
+
+Type "revcat offerings list"
+Sleep 200ms
+Enter
+Sleep 2200ms
 
 Sleep 600ms
