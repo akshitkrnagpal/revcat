@@ -47,6 +47,14 @@ type globalFlags struct {
 
 var Flags = &globalFlags{}
 
+// RootCmd returns the top-level revcat command. Exposed for tools that
+// introspect the cobra tree (e.g. the CLI reference doc generator under
+// scripts/gen-cli-reference).
+//
+// Don't use this in command handlers - they get their own *cobra.Command
+// via the runE callback.
+func RootCmd() *cobra.Command { return rootCmd }
+
 // rootCmd is the top-level revcat command.
 var rootCmd = &cobra.Command{
 	Use:   "revcat",
