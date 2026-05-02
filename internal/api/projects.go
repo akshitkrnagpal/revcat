@@ -37,6 +37,20 @@ func (c *Client) ListProjects(ctx context.Context) ([]Project, error) {
 	}
 }
 
+// CreateProject creates a new project at the account level. Account-
+// scoped, not project-scoped, so this does NOT call requireProject().
+//
+// v2: POST /v2/projects, scope project_configuration:projects:read_write.
+// Body: {"name": "..."}. Returns the created Project.
+func (c *Client) CreateProject(ctx context.Context, name string) (*Project, error) {
+	var out Project
+	body := map[string]any{"name": name}
+	if err := c.Do(ctx, "POST", "/projects", body, &out); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
 // GetProject fetches a single project by id. v2 has no GET /projects/{id}
 // endpoint, so we list and filter client-side.
 func (c *Client) GetProject(ctx context.Context, id string) (*Project, error) {
