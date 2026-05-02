@@ -19,7 +19,7 @@ revcat publish offering pro --paywall ./paywalls/pro.json
 
 ## Why
 
-RevenueCat ships a dashboard, REST API, and (2025) an MCP server, but no first-party CLI. revcat covers the v2 REST API surface accessible via OAuth: full CRUD on entitlements, offerings, packages, products, paywalls, webhooks, virtual currencies; per-customer grants/refunds/transfers; metrics + charts; audit-logs.
+RevenueCat ships a dashboard, a REST API, and an MCP server, but no first-party CLI. revcat covers the v2 REST API surface accessible via OAuth: full CRUD on entitlements, offerings, packages, products, paywalls, webhooks, virtual currencies; per-customer grants/refunds/transfers; metrics + charts; audit-logs.
 
 Output is a colored table when you're at a terminal and JSON when you're piping into a script - no `--json` ceremony.
 
@@ -28,7 +28,7 @@ Output is a colored table when you're at a terminal and JSON when you're piping 
 ```sh
 brew install akshitkrnagpal/tap/revcat
 
-# or, from source (Go 1.23+)
+# or, from source (Go 1.26+)
 go install github.com/akshitkrnagpal/revcat/cmd/revcat@latest
 ```
 
@@ -82,7 +82,7 @@ revcat apps               list | view | public-keys | storekit-config
 
 revcat entitlements       list | view | create | update | delete | archive | unarchive
                           products | attach | detach
-revcat offerings          list | view | create | update | delete | archive | unarchive
+revcat offerings          list | view | preview | create | update | delete | archive | unarchive
                           set-current
 revcat packages           list | view | create | update | delete | products | attach | detach
 revcat products           list | view | create | update | delete | archive | unarchive
@@ -107,6 +107,7 @@ revcat audit-logs         list
 revcat webhooks           list | view | create | update | delete
 revcat virtual-currencies list | view | create | update | delete | archive | unarchive
 
+revcat init               (run inside a repo to bind project context)
 revcat doctor
 revcat auth               login | status | doctor | use | list | logout
 revcat completion         bash | zsh | fish
@@ -142,10 +143,10 @@ Promote a new paywall to current:
 revcat publish offering pro --paywall ./paywalls/pro.json
 ```
 
-Audit-grant a refund:
+Grant a complimentary entitlement:
 
 ```sh
-revcat subscribers grant app_user_123 premium -d 7d -r "support ticket #2241"
+revcat subscribers grant app_user_123 premium -d 7d
 ```
 
 Wire entitlement <-> product:
