@@ -18,6 +18,8 @@ cd ~/your-repo
 revcat init
 ```
 
+![revcat init](https://raw.githubusercontent.com/akshitkrnagpal/revcat/main/demo/init.gif)
+
 `revcat init` lists projects you can access, prompts for one (and optionally apps), then writes:
 
 - `revcat.toml` (committed): records `project_id` + apps so a `git clone` documents which RC project this repo belongs to.

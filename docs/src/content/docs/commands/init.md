@@ -22,6 +22,8 @@ apps block entirely with --no-apps. Skip the local creds copy with
 Full flag reference: see [the CLI reference](/reference/cli/).
 <!-- AUTOGEN_END -->
 
+![revcat init](https://raw.githubusercontent.com/akshitkrnagpal/revcat/main/demo/init.gif)
+
 ## What it writes
 
 | File | Committed? | Mode | Purpose |
