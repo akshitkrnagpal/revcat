@@ -16,8 +16,8 @@ id; manage those in the dashboard.
 | Command | Description |
 | --- | --- |
 | `projects create` | Create a new project |
-| `projects list` | List projects accessible to the active secret key |
-| `projects view` | Show one project by id (defaults to the active profile's project) |
+| `projects list` | List projects accessible to this credential |
+| `projects view` | Show one project by id (defaults to the resolved project) |
 
 Aliases: `proj`.
 

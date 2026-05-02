@@ -15,7 +15,7 @@ The tap lives at <https://github.com/akshitkrnagpal/homebrew-tap> and is updated
 
 ## `go install`
 
-Requires Go 1.23 or later.
+Requires Go 1.26 or later.
 
 ```sh
 go install github.com/akshitkrnagpal/revcat/cmd/revcat@latest

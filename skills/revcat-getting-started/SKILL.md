@@ -15,7 +15,7 @@ Docs: <https://revcat.vercel.app>
 ```sh
 brew install akshitkrnagpal/tap/revcat
 
-# or, from source (Go 1.23+)
+# or, from source (Go 1.26+)
 go install github.com/akshitkrnagpal/revcat/cmd/revcat@latest
 ```
 
