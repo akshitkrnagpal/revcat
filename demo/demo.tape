@@ -13,7 +13,7 @@
 #   - this directory has been bound to a project (cd demo && revcat init)
 #     so revcat picks up project context from ./.revcat/config.json,
 #     OR REVCAT_REFRESH_TOKEN + REVCAT_PROJECT_ID are set in the env
-#   - the bound project has an offering called "pro" (or edit below)
+#   - the bound project has an offering called "default" (or edit below)
 #####################################################################
 
 Output demo.gif
@@ -42,14 +42,14 @@ Sleep 1500ms
 # 2. Ship it. The orchestrator does both steps - PUT paywall + set
 #    offering as current - in one shot. --dry-run prints the plan so
 #    the demo is reproducible regardless of repo state.
-Type "revcat publish offering pro --paywall ./paywall.json --dry-run --confirm"
+Type "revcat publish offering default --paywall ./paywall.json --dry-run --confirm"
 Sleep 200ms
 Enter
 Sleep 2500ms
 
 # 3. Confirm. Read-only, just shows that the offering is what the SDK
 #    will see.
-Type "revcat offerings view pro"
+Type "revcat offerings view default"
 Sleep 200ms
 Enter
 Sleep 1500ms
