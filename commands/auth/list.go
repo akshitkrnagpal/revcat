@@ -14,7 +14,7 @@ var listCmd = &cobra.Command{
 }
 
 func runList(cmd *cobra.Command, args []string) error {
-	store, err := authstore.OpenGlobal(bypassKeychain(cmd))
+	store, err := authstore.OpenGlobal()
 	if err != nil {
 		return err
 	}

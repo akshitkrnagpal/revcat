@@ -49,7 +49,6 @@ type globalFlags struct {
 	Pretty         bool
 	Profile        string
 	ProjectID      string
-	BypassKeychain bool
 }
 
 var Flags = &globalFlags{}
@@ -100,7 +99,6 @@ func init() {
 	pf.BoolVar(&Flags.Pretty, "pretty", false, "Pretty-print JSON output")
 	pf.StringVar(&Flags.Profile, "profile", "", "Auth profile name (default: REVCAT_PROFILE or 'default')")
 	pf.StringVar(&Flags.ProjectID, "project-id", "", "RevenueCat project id (default: REVCAT_PROJECT_ID, ./revcat.toml, or the bound profile)")
-	pf.BoolVar(&Flags.BypassKeychain, "bypass-keychain", false, "Use ~/.revcat/config.json (file backend) instead of the OS keychain")
 
 	rootCmd.AddCommand(appscmd.Cmd)
 	rootCmd.AddCommand(auditlogscmd.Cmd)

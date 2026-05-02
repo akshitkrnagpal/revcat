@@ -54,8 +54,7 @@ var allowlistedFirstToken = map[string]bool{
 	"<resource>": true,
 	"<id>":       true,
 	"<cmd>":      true,
-	"--profile":  true, // e.g. "revcat --profile work auth status"
-	"--bypass-keychain": true,
+	"--profile": true, // e.g. "revcat --profile work auth status"
 }
 
 // inlineRe matches an inline code span containing `revcat ...`.

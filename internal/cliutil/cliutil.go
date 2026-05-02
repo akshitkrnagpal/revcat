@@ -17,15 +17,6 @@ import (
 // envProjectID is the env var that overrides revcat.toml.
 const envProjectID = "REVCAT_PROJECT_ID"
 
-// BypassKeychain reads the global --bypass-keychain flag from cobra root.
-func BypassKeychain(cmd *cobra.Command) bool {
-	flag := cmd.Root().PersistentFlags().Lookup("bypass-keychain")
-	if flag == nil {
-		return false
-	}
-	return flag.Value.String() == "true"
-}
-
 // Profile reads the global --profile flag from cobra root.
 func Profile(cmd *cobra.Command) string {
 	flag := cmd.Root().PersistentFlags().Lookup("profile")
@@ -46,11 +37,10 @@ func ProjectIDFlag(cmd *cobra.Command) string {
 
 // ResolveCreds resolves the active credential via the precedence chain
 // (REVCAT_REFRESH_TOKEN env > walked-up .revcat/config.json > global
-// store / active profile). Wraps authstore.Resolve with the cobra
-// flags pulled out of the command.
+// active profile). Wraps authstore.Resolve with the cobra flags pulled
+// out of the command.
 func ResolveCreds(cmd *cobra.Command) (*authstore.Resolved, error) {
 	return authstore.Resolve(authstore.ResolveOptions{
-		Bypass:      BypassKeychain(cmd),
 		FlagProfile: Profile(cmd),
 	})
 }
@@ -117,24 +107,19 @@ func ClientForProject(cmd *cobra.Command, projectIDOverride string) (*api.Client
 
 // ClientFromResolved builds the API client from an already-resolved
 // credential. Lets long-running commands (init, doctor) avoid re-running
-// Resolve when they already hold one - each Resolve call re-opens the
-// global store, which is cheap on a real keychain but re-prompts the
-// file-backed keyring for its passphrase.
+// Resolve when they already hold one.
 func ClientFromResolved(cmd *cobra.Command, resolved *authstore.Resolved, projectIDOverride string) (*api.Client, error) {
 	pid := projectIDOverride
 	if pid == "" {
 		pid = ResolveProjectID(cmd, resolved)
 	}
 
-	// For SourceKeychain / SourceGlobalFile the OAuthTokenSource
-	// needs a store handle to persist refreshed tokens back. The
-	// passphrase prompt is cached per-process so this is free-ish
-	// after the first open.
+	// For SourceGlobalFile the OAuthTokenSource needs a store handle
+	// to persist refreshed tokens back to ~/.revcat/config.json.
 	var store authstore.GlobalStore
 	var err error
-	switch resolved.Source {
-	case authstore.SourceKeychain, authstore.SourceGlobalFile:
-		store, err = authstore.OpenGlobal(BypassKeychain(cmd))
+	if resolved.Source == authstore.SourceGlobalFile {
+		store, err = authstore.OpenGlobal()
 		if err != nil {
 			return nil, fmt.Errorf("reopen global store for refresh: %w", err)
 		}

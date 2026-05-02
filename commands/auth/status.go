@@ -24,7 +24,7 @@ var statusCmd = &cobra.Command{
 	Use:   "status",
 	Short: "Show the active auth profile and resolved project",
 	Long: `Print the active credential and where it came from (local
-.revcat/config.json, global keychain, file backend, or env hatch). Pass
+.revcat/config.json, global ~/.revcat/config.json, or env hatch). Pass
 --validate to also hit the RevenueCat API and confirm the token is
 accepted.`,
 	RunE: runStatus,
@@ -41,7 +41,6 @@ func runStatus(cmd *cobra.Command, args []string) error {
 		flagProfile = cliutil.Profile(cmd)
 	}
 	resolved, err := authstore.Resolve(authstore.ResolveOptions{
-		Bypass:      cliutil.BypassKeychain(cmd),
 		FlagProfile: flagProfile,
 	})
 	if err != nil {
@@ -69,9 +68,8 @@ func runStatus(cmd *cobra.Command, args []string) error {
 
 	if statusValidate {
 		var store authstore.GlobalStore
-		switch resolved.Source {
-		case authstore.SourceKeychain, authstore.SourceGlobalFile:
-			store, _ = authstore.OpenGlobal(cliutil.BypassKeychain(cmd))
+		if resolved.Source == authstore.SourceGlobalFile {
+			store, _ = authstore.OpenGlobal()
 		}
 		client := api.New(api.Options{
 			ProjectID:   resolvedProject,

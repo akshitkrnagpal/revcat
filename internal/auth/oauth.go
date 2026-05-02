@@ -112,7 +112,7 @@ func (s *OAuthTokenSource) persist() error {
 		}
 		s.resolved.Local.Profile = *s.resolved.Profile
 		return SaveLocal(s.resolved.Local.Path, s.resolved.Local)
-	case SourceKeychain, SourceGlobalFile:
+	case SourceGlobalFile:
 		if s.store == nil {
 			return nil
 		}

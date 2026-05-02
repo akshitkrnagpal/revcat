@@ -27,12 +27,9 @@ var loginCmd = &cobra.Command{
 client is RevenueCat's public PKCE client by default; override with
 REVCAT_OAUTH_CLIENT_ID or --client-id.
 
-Tokens are written to your OS keychain. Pass --bypass-keychain (or set
-REVCAT_BYPASS_KEYCHAIN=1) to use ~/.revcat/config.json (HOME) instead,
-useful on Linux without secret-service or in containers.
-
-After login, run ` + "`revcat init`" + ` inside your project directory to bind
-a project_id (or set REVCAT_PROJECT_ID per command).
+Tokens are written to ~/.revcat/config.json (mode 0600). After login,
+run ` + "`revcat init`" + ` inside your project directory to bind a project_id
+(or set REVCAT_PROJECT_ID per command).
 
 Examples:
   revcat auth login                          # browser, default profile
@@ -108,7 +105,7 @@ func runLogin(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("token exchange: %w", err)
 	}
 
-	store, err := authstore.OpenGlobal(bypassKeychain(cmd))
+	store, err := authstore.OpenGlobal()
 	if err != nil {
 		return err
 	}
@@ -128,7 +125,7 @@ func runLogin(cmd *cobra.Command, args []string) error {
 	}
 
 	if !loginNoVerify {
-		resolved := &authstore.Resolved{Profile: profile, Source: authstore.SourceKeychain}
+		resolved := &authstore.Resolved{Profile: profile, Source: authstore.SourceGlobalFile}
 		client := api.New(api.Options{
 			TokenSource: authstore.NewOAuthTokenSource(resolved, store),
 			Version:     cmd.Root().Version,
@@ -144,11 +141,7 @@ func runLogin(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	loc := "OS keychain"
-	if bypassKeychain(cmd) {
-		loc = "~/.revcat/config.json"
-	}
-	output.Success("oauth login saved as %q in %s", loginName, loc)
+	output.Success("oauth login saved as %q in ~/.revcat/config.json", loginName)
 	output.Info("  expires:    %s", time.UnixMilli(profile.ExpiresAt).Local().Format("2006-01-02 15:04 MST"))
 	output.Info("  scope:      %s", profile.Scope)
 	output.Info("next: cd into your repo and run `revcat init` to bind a project_id")

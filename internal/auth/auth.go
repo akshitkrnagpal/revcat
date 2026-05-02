@@ -2,21 +2,21 @@
 //
 // Two storage tiers:
 //
-//   - Global (default keychain, or ~/.revcat/config.json with bypass):
-//     created by `revcat auth login`. Holds OAuth tokens keyed by
-//     profile name. Multi-account is supported here via --profile.
+//   - Global (~/.revcat/config.json, mode 0600): created by
+//     `revcat auth login`. Holds OAuth tokens keyed by profile name.
+//     Multi-account is supported here via --profile.
 //
 //   - Project-local (./.revcat/config.json, gitignored, mode 0600):
 //     created by `revcat init` in a repo. Single credential blob plus
 //     project_id and optional apps. Walked up from cwd. When present,
 //     overrides the global profile so an agent or sandbox in the
-//     directory can run without touching the user's keychain.
+//     directory can run without touching ~/.
 //
 // Credential resolution (Resolve below):
 //
 //  1. REVCAT_REFRESH_TOKEN env (CI / sandbox hatch).
 //  2. ./.revcat/config.json walked up from cwd.
-//  3. Global keychain entry (or file fallback) for the active profile.
+//  3. ~/.revcat/config.json for the active profile.
 //
 // Schema rule: as of v0.4 the only credential type is OAuth. Profiles
 // stored under the v0.3 secret-key shape error on read with a clear
@@ -28,26 +28,15 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"sync"
 	"time"
-
-	"github.com/99designs/keyring"
 )
-
-// service is the keychain service identifier. All revcat profiles live
-// under this service; the keychain account name is the profile name.
-const service = "revcat"
-
-// envBypassKeychain forces the file backend even without --bypass-keychain.
-const envBypassKeychain = "REVCAT_BYPASS_KEYCHAIN"
 
 // envProfile picks the active profile when --profile is not set.
 const envProfile = "REVCAT_PROFILE"
 
 const defaultProfile = "default"
 
-// Profile is one set of OAuth credentials persisted under a name. The
-// only auth model in v0.4+. Old secret-key profiles cannot be read.
+// Profile is one set of OAuth credentials persisted under a name.
 type Profile struct {
 	Name         string `json:"name"`
 	AccessToken  string `json:"access_token"`
@@ -75,11 +64,15 @@ func (p *Profile) NeedsRefresh(skew time.Duration) bool {
 var ErrNoProfile = errors.New("no profile found; run `revcat auth login`")
 
 // ErrLegacyProfile is returned when the on-disk shape is from v0.3
-// (secret-key auth). The user must rerun login under v0.4 OAuth.
+// (secret-key auth). The user must rerun login under v0.4+ OAuth.
 var ErrLegacyProfile = errors.New("this profile was created under v0.3 secret-key auth, which was removed in v0.4. run `revcat auth login` to reauth via OAuth")
 
 // GlobalStore is the credential persistence interface for the global
-// tier. Two implementations (keychain, file) selected at runtime.
+// tier. Always backed by ~/.revcat/config.json since v0.6 (the
+// passphrase-encrypted keyring backend was dropped because the
+// shipped binary's CGO_ENABLED=0 build couldn't reach the real OS
+// keychain anyway, so the encryption added friction without real
+// security).
 type GlobalStore interface {
 	Get(name string) (*Profile, error)
 	Set(p *Profile) error
@@ -87,14 +80,10 @@ type GlobalStore interface {
 	List() ([]string, error)
 }
 
-// OpenGlobal returns the right global store for the current process.
-// bypass=true (or REVCAT_BYPASS_KEYCHAIN=1) forces the file backend at
-// ~/.revcat/config.json.
-func OpenGlobal(bypass bool) (GlobalStore, error) {
-	if bypass || os.Getenv(envBypassKeychain) == "1" {
-		return openGlobalFile()
-	}
-	return openKeychain()
+// OpenGlobal returns the global store. Always the file backend at
+// ~/.revcat/config.json (mode 0600).
+func OpenGlobal() (GlobalStore, error) {
+	return openGlobalFile()
 }
 
 // ResolveProfileName picks which global profile to use. Precedence:
@@ -111,87 +100,6 @@ func ResolveProfileName(flagProfile string) string {
 		return active
 	}
 	return defaultProfile
-}
-
-// ----- keychain backend -----
-
-type keychainStore struct{ ring keyring.Keyring }
-
-func openKeychain() (GlobalStore, error) {
-	ring, err := keyring.Open(keyring.Config{
-		ServiceName:              service,
-		KeychainTrustApplication: true,
-		KeychainSynchronizable:   false,
-		FileDir:                  "~/.revcat/keyring",
-		FilePasswordFunc:         cachedPassphrase,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("open keychain: %w", err)
-	}
-	return &keychainStore{ring: ring}, nil
-}
-
-// cachedPassphrase wraps keyring.TerminalPrompt in a process-scoped
-// sync.Once. The file-backend keyring (used on macOS without cgo and on
-// Linux without secret-service) re-prompts for the passphrase on every
-// open, which means a single `revcat init` would prompt 2-3 times. We
-// only need the user to enter it once per invocation.
-//
-// macOS Keychain / Linux Secret Service backends don't call this func
-// at all (the OS holds the passphrase), so the cache is harmless there.
-var (
-	passOnce sync.Once
-	passVal  string
-	passErr  error
-)
-
-func cachedPassphrase(prompt string) (string, error) {
-	passOnce.Do(func() {
-		passVal, passErr = keyring.TerminalPrompt(prompt)
-	})
-	return passVal, passErr
-}
-
-func (s *keychainStore) Get(name string) (*Profile, error) {
-	item, err := s.ring.Get(name)
-	if err != nil {
-		if errors.Is(err, keyring.ErrKeyNotFound) {
-			return nil, ErrNoProfile
-		}
-		return nil, fmt.Errorf("read keychain: %w", err)
-	}
-	p, err := decodeProfile(item.Data, name)
-	if err != nil {
-		return nil, err
-	}
-	return p, nil
-}
-
-func (s *keychainStore) Set(p *Profile) error {
-	data, err := json.Marshal(p)
-	if err != nil {
-		return err
-	}
-	return s.ring.Set(keyring.Item{
-		Key:         p.Name,
-		Data:        data,
-		Label:       "revcat: " + p.Name,
-		Description: "RevenueCat OAuth credential",
-	})
-}
-
-func (s *keychainStore) Delete(name string) error {
-	if err := s.ring.Remove(name); err != nil {
-		if errors.Is(err, keyring.ErrKeyNotFound) {
-			return ErrNoProfile
-		}
-		return err
-	}
-	return nil
-}
-
-func (s *keychainStore) List() ([]string, error) {
-	return s.ring.Keys()
 }
 
 // decodeProfile parses a profile blob and rejects v0.3 secret-key

@@ -24,23 +24,17 @@ Pre-built binaries for every platform are on the [GitHub Releases page](https://
 ## Auth (one-time)
 
 ```sh
-revcat auth login                # browser OAuth, saves tokens to OS keychain
+revcat auth login                # browser OAuth, saves tokens to ~/.revcat/config.json
 cd ~/your-repo && revcat init    # bind this repo to a project
 revcat auth doctor               # verify
 ```
 
-`revcat auth login` opens the browser for the OAuth flow and stores the tokens in your OS keychain. `revcat init` walks the user through picking a project (and optionally apps), then writes:
+`revcat auth login` opens the browser for the OAuth flow and stores the tokens in `~/.revcat/config.json` (mode 0600). `revcat init` walks the user through picking a project (and optionally apps), then writes:
 
 - `revcat.toml` (committed): project_id + apps. Documents which RC project this repo belongs to.
-- `.revcat/config.json` (gitignored, mode 0600): copies the credential into the directory. Walked up from cwd by every revcat command, so agents and sandboxes inside the directory inherit the credential without keychain access.
+- `.revcat/config.json` (gitignored, mode 0600): copies the credential into the directory. Walked up from cwd by every revcat command, so agents and sandboxes inside the directory inherit the credential without touching the global file.
 
 `.revcat/` is auto-appended to `.gitignore`.
-
-### Linux / containers without secret-service
-
-```sh
-revcat auth login --bypass-keychain    # writes ~/.revcat/config.json instead of keychain
-```
 
 ### Headless / CI
 
@@ -50,7 +44,7 @@ export REVCAT_PROJECT_ID=proj_...
 revcat offerings list
 ```
 
-revcat synthesizes a virtual profile, refreshes tokens in-memory, no keychain or login flow. Pull the refresh token from your CI secret manager.
+revcat synthesizes a virtual profile, refreshes tokens in-memory, no login flow. Pull the refresh token from your CI secret manager.
 
 ### Multi-account
 
@@ -88,7 +82,6 @@ Auth + housekeeping:
 
 - `--profile <name>` - active global profile (overridden by walked-up `.revcat/config.json`)
 - `--project-id <id>` - override the resolved project id for this invocation
-- `--bypass-keychain` - use `~/.revcat/config.json` (file backend) instead of OS keychain
 - `--output table|json|csv|markdown` - force a format (auto: table on TTY, JSON when piped)
 - `--pretty` - indent JSON
 - `-v / -q / --no-color / --debug`

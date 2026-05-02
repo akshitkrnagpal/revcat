@@ -10,7 +10,7 @@ Bind the current directory to a RevenueCat project. Writes:
 
 After init, every command run inside this directory inherits the project
 context. Agents and sandboxes that have access to the directory can run
-revcat without touching the user's keychain.
+revcat without touching the global ~/.revcat/config.json.
 
 Interactive (default): lists projects you can access, prompts for one,
 then optionally lists apps in that project and lets you tag them.
@@ -88,7 +88,7 @@ revcat entitlements list
 revcat publish offering pro --paywall ./paywalls/pro.json
 ```
 
-`cd` out of the directory and the binding goes away — commands fall back to the global keychain, and project-scoped commands need `--project-id`.
+`cd` out of the directory and the binding goes away. Commands fall back to the global `~/.revcat/config.json`, and project-scoped commands need `--project-id`.
 
 ## Verifying
 

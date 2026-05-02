@@ -21,7 +21,7 @@ REVCAT_PROFILE in your shell.`,
 }
 
 func runUse(cmd *cobra.Command, args []string) error {
-	store, err := authstore.OpenGlobal(bypassKeychain(cmd))
+	store, err := authstore.OpenGlobal()
 	if err != nil {
 		return err
 	}

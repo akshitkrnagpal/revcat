@@ -10,8 +10,9 @@ import (
 )
 
 // globalFileStore is the GlobalStore backed by ~/.revcat/config.json.
-// Used when --bypass-keychain is set or REVCAT_BYPASS_KEYCHAIN=1, in
-// containers / Linux without secret-service / CI without a keyring.
+// Since v0.6 this is the only global backend (the keyring backend was
+// dropped because the CGO_ENABLED=0 binary couldn't reach the real OS
+// keychain anyway).
 //
 // File format: a flat map keyed by profile name, mode 0600 to keep
 // other users on the box from reading it. Atomic writes via
@@ -21,9 +22,7 @@ type globalFileStore struct {
 }
 
 // globalFileName is the path under HOME the file backend writes to.
-// Pre-v0.4 it lived at the cwd, which made bypass-keychain depend on
-// where you ran revcat from. Now it's HOME-anchored, mirroring git's
-// ~/.gitconfig pattern.
+// HOME-anchored, mirroring git's ~/.gitconfig pattern.
 const globalFileName = ".revcat/config.json"
 
 func openGlobalFile() (GlobalStore, error) {

@@ -90,7 +90,7 @@ func TestResolve_SelfHealsStaleActiveMarker(t *testing.T) {
 		t.Fatalf("SetActive: %v", err)
 	}
 
-	got, err := Resolve(ResolveOptions{Bypass: true, Cwd: t.TempDir()})
+	got, err := Resolve(ResolveOptions{Cwd: t.TempDir()})
 	if err != nil {
 		t.Fatalf("Resolve: %v", err)
 	}

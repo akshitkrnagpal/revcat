@@ -2,6 +2,27 @@
 
 Notable changes per release. Dates are UTC.
 
+## [v0.6.0](https://github.com/akshitkrnagpal/revcat/releases/tag/v0.6.0) - 2026-05-01
+
+Drops the keyring backend. `~/.revcat/config.json` (mode 0600) is now the only global credential store.
+
+The keyring backend was a passphrase-encrypted file (99designs/keyring's file backend), kept because the shipped `CGO_ENABLED=0` binary couldn't reach the real OS keychain anyway. In practice it just added an interactive passphrase prompt that broke Claude Code, CI, and any non-interactive context. Encryption-with-prompt over a file the binary can already read provided no real security boundary, so v0.6 collapses the global tier to a plain mode-0600 file matching `git`'s `~/.gitconfig` pattern.
+
+### Breaking
+
+- `--bypass-keychain` flag and `REVCAT_BYPASS_KEYCHAIN=1` env var are removed. The file backend is now the only backend, so the bypass concept no longer applies. Existing scripts that pass either of these will fail with an unknown-flag error; remove them.
+- `Source` enum dropped `SourceKeychain`. `auth status` and `auth doctor` now report `source=file` (or `local` / `env` as before).
+- `internal/auth.OpenGlobal()` no longer takes a `bool` argument.
+
+### Migration
+
+- v0.5 users who ran `revcat auth login` (default keychain path): rerun `revcat auth login` once to write tokens to `~/.revcat/config.json`. The encrypted-file backend is no longer read.
+- v0.5 users who ran `revcat auth login --bypass-keychain`: nothing to do. Your `~/.revcat/config.json` is exactly the file v0.6 reads.
+
+### Removed
+
+- `github.com/99designs/keyring` dependency (and the transitive jose2go pin / replace directive).
+
 ## [v0.5.0](https://github.com/akshitkrnagpal/revcat/releases/tag/v0.5.0) - 2026-05-02
 
 Wraps the v2 endpoints we left as wrap-pending in v0.4: project create, app CRUD, and collaborators list. revcat now covers every v2 operation reachable with its OAuth scope set.

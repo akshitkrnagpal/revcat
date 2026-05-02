@@ -20,7 +20,6 @@ func rootWithFlags(t *testing.T) *cobra.Command {
 	pf := root.PersistentFlags()
 	pf.String("project-id", "", "")
 	pf.String("profile", "", "")
-	pf.Bool("bypass-keychain", false, "")
 	return root
 }
 

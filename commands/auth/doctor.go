@@ -30,15 +30,10 @@ type check struct {
 
 func runAuthDoctor(cmd *cobra.Command, args []string) error {
 	checks := []check{}
-	bypass := bypassKeychain(cmd)
 
 	resolved, err := cliutil.ResolveCreds(cmd)
 	if err != nil {
-		store := "keychain"
-		if bypass {
-			store = "file (~/.revcat/config.json)"
-		}
-		checks = append(checks, check{name: "credential resolve", ok: false, msg: err.Error(), hint: "checked: REVCAT_REFRESH_TOKEN env, walked-up .revcat/config.json, " + store + " (active profile). run `revcat auth login`."})
+		checks = append(checks, check{name: "credential resolve", ok: false, msg: err.Error(), hint: "checked: REVCAT_REFRESH_TOKEN env, walked-up .revcat/config.json, ~/.revcat/config.json (active profile). run `revcat auth login`."})
 		return renderChecks(checks)
 	}
 	checks = append(checks, check{name: "credential resolve", ok: true, msg: fmt.Sprintf("source=%s profile=%s", resolved.Source, resolved.Profile.Name)})
