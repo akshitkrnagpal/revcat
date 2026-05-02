@@ -31,6 +31,20 @@ Within tier 3, the active profile name is `--profile` flag > `REVCAT_PROFILE` en
 
 Project id resolution: `--project-id` flag > `REVCAT_PROJECT_ID` env > resolved credential's bound project (local config or env hatch) > walked-up `revcat.toml`.
 
+## Source of truth
+
+Tier 1 (canonical): cobra commands in `commands/` and the api client in `internal/api/`. Plus RC's v2 API docs for what upstream exposes.
+
+Tier 2 (auto-derived from tier 1): `revcat <cmd> --help`, and the auto-generated reference at `docs/src/content/docs/reference/cli.md`. Regenerate after any command tree change:
+
+```sh
+make docs-cli
+```
+
+Tier 3 (hand-maintained, derived): `README.md`, `docs/src/content/docs/{commands,getting-started,guides}/`, `skills/*/SKILL.md`, `CHANGELOG.md`, `demo/demo.tape`.
+
+When tier 3 conflicts with tier 1, tier 1 wins. To verify "does X command exist," run `revcat <cmd> --help` or read the cobra command, not the docs.
+
 ## Style
 
 - No em-dashes anywhere (commit hook would catch them; manual for now)
