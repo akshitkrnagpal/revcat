@@ -1,5 +1,7 @@
 #####################################################################
-# revcat demo gif
+# revcat demo gif - the 5-second hero shot
+#
+# One moment of joy: ship a paywall update from the terminal.
 #
 # Regenerate with:
 #   brew install vhs
@@ -8,9 +10,10 @@
 #
 # Assumes:
 #   - revcat is on $PATH (brew install akshitkrnagpal/tap/revcat)
-#   - an active profile exists in your keychain (revcat auth login ...)
-#   - the active profile points at a project that has at least one
-#     offering called "default"
+#   - this directory has been bound to a project (cd demo && revcat init)
+#     so revcat picks up project context from ./.revcat/config.json,
+#     OR REVCAT_REFRESH_TOKEN + REVCAT_PROJECT_ID are set in the env
+#   - the bound project has an offering called "default" (or edit below)
 #####################################################################
 
 Output demo.gif
@@ -18,7 +21,7 @@ Output demo.gif
 Set Shell "zsh"
 Set FontSize 18
 Set Width 1280
-Set Height 720
+Set Height 480
 Set Theme "Catppuccin Mocha"
 Set Padding 24
 Set TypingSpeed 35ms
@@ -30,43 +33,25 @@ Type 'export PS1="%F{12}$ %f"' Enter
 Ctrl+L
 Show
 
-Type "revcat doctor --output table"
+# 1. Frame the input. Show the paywall body that will ship.
+Type "cat paywall.json | jq"
 Sleep 200ms
 Enter
-Sleep 3s
+Sleep 1500ms
 
-Type "clear"
-Enter
-Sleep 200ms
-
-# Catalog read
-Type "revcat offerings list"
-Sleep 200ms
-Enter
-Sleep 3s
-
-Type "clear"
-Enter
-Sleep 200ms
-
-# Catalog: entitlements
-Type "revcat entitlements list"
-Sleep 200ms
-Enter
-Sleep 2.5s
-
-Type "clear"
-Enter
-Sleep 200ms
-
-# The verb-orchestrator: dry-run a paywall publish.
+# 2. Ship it. The orchestrator does both steps - PUT paywall + set
+#    offering as current - in one shot. --dry-run prints the plan so
+#    the demo is reproducible regardless of repo state.
 Type "revcat publish offering default --paywall ./paywall.json --dry-run --confirm"
-Sleep 300ms
-Enter
-Sleep 4s
-
-Type "clear"
-Enter
 Sleep 200ms
+Enter
+Sleep 2500ms
 
-Sleep 800ms
+# 3. Confirm. Read-only, just shows that the offering is what the SDK
+#    will see.
+Type "revcat offerings view default"
+Sleep 200ms
+Enter
+Sleep 1500ms
+
+Sleep 600ms
