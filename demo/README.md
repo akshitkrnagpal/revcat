@@ -7,9 +7,10 @@
 ```sh
 brew install vhs
 
-# revcat must be on $PATH and a profile must exist that points at a
-# project with at least one offering called "default".
-export REVCAT_API_KEY=sk_...
+# revcat must be on $PATH. Run `revcat auth login` once, then either
+# `revcat init` inside this directory to bind a project, or set the env
+# below for a one-off (the project must have an offering named "default").
+export REVCAT_REFRESH_TOKEN=rtk_...
 export REVCAT_PROJECT_ID=proj_...
 
 cd demo
