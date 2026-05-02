@@ -2,7 +2,7 @@
 
 Notable changes per release. Dates are UTC.
 
-## [v0.6.0](https://github.com/akshitkrnagpal/revcat/releases/tag/v0.6.0) - 2026-05-01
+## [v0.6.0](https://github.com/akshitkrnagpal/revcat/releases/tag/v0.6.0) - 2026-05-02
 
 Drops the keyring backend. `~/.revcat/config.json` (mode 0600) is now the only global credential store.
 
