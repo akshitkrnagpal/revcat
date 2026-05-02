@@ -2,6 +2,28 @@
 
 Notable changes per release. Dates are UTC.
 
+## [v0.5.0](https://github.com/akshitkrnagpal/revcat/releases/tag/v0.5.0) - 2026-05-02
+
+Wraps the v2 endpoints we left as wrap-pending in v0.4: project create, app CRUD, and collaborators list. revcat now covers every v2 operation reachable with its OAuth scope set.
+
+### Added
+
+- `revcat projects create --name <name>` wraps `POST /v2/projects` (`project_configuration:projects:read_write`). Returns the created project; pipe with `--output json | jq -r .id` to feed into `revcat init` or `--project-id`.
+- `revcat apps create` wraps `POST /v2/projects/{id}/apps`. Shortcut flags for the common platforms (`--type app_store|play_store|amazon|mac_app_store` plus `--bundle` / `--package`); `--file` for the rest (`stripe`, `rc_billing`, `paddle`, `roku`, or any optional storefront fields).
+- `revcat apps update <app_id>` wraps `POST /v2/projects/{id}/apps/{id}` (v2 uses POST, not PATCH, at the same path as GET). `--name` shortcut for renames; `--file` for arbitrary fields. Send a nested field as `null` in the JSON body to clear it.
+- `revcat apps delete <app_id>` wraps `DELETE /v2/projects/{id}/apps/{id}`. Hard delete with a confirm prompt; `-y/--confirm` to skip. Returns 409 if dependent resources exist.
+- `revcat collaborators list` (alias `members`) wraps `GET /v2/projects/{id}/collaborators` (`project_configuration:collaborators:read`). New top-level command group; columns: id, name (`-` for pending invites), email, role, accepted (date or `pending`), mfa.
+
+### Changed
+
+- `docs/reference/api-coverage.md` headline now reads "every v2 operation reachable with revcat's OAuth scope set is wrapped" (was "most"). The remaining out-of-scope items shrink to project update/delete (v2 has create + list only) and the events firehose (delivered via webhooks, not REST).
+
+### Internal
+
+- `internal/api`: new `CreateProject`, `CreateApp`, `UpdateApp`, `DeleteApp`, `Collaborator` type, `ListCollaborators`.
+- New `commands/collaborators` package mounted at root.
+- Sweep across docs + skills to remove the legacy "project create / app CRUD / collaborators are not in v2 REST" wording. PR #36 already corrected api-coverage; this release migrates the sentinels off "wrap pending."
+
 ## [v0.4.0](https://github.com/akshitkrnagpal/revcat/releases/tag/v0.4.0) - 2026-05-01
 
 OAuth-only auth and per-directory project context. Breaking change from v0.3: secret-key auth removed.
