@@ -8,9 +8,10 @@
 #
 # Assumes:
 #   - revcat is on $PATH (brew install akshitkrnagpal/tap/revcat)
-#   - an active profile exists in your keychain (revcat auth login ...)
-#   - the active profile points at a project that has at least one
-#     offering called "default"
+#   - this directory has been bound to a project (cd demo && revcat init)
+#     so revcat picks up project context from ./.revcat/config.json,
+#     OR REVCAT_REFRESH_TOKEN + REVCAT_PROJECT_ID are set in the env
+#   - the bound project has at least one offering called "default"
 #####################################################################
 
 Output demo.gif
