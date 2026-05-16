@@ -1,0 +1,59 @@
+<svg width="1600" height="1000" viewBox="0 0 1600 1000" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1600" height="1000" fill="#11121f"/>
+  <rect x="72" y="72" width="1456" height="856" rx="28" fill="#181a2a" stroke="#30344f" stroke-width="2"/>
+
+  <text x="104" y="142" fill="#f2f4ff" font-family="Arial" font-size="54" font-weight="800">RevenueCat agent workflows</text>
+  <text x="104" y="190" fill="#aeb6d8" font-family="Arial" font-size="27">Official MCP is the natural-language surface. revcat is the repo-pinned ops surface.</text>
+
+  <rect x="104" y="238" width="1392" height="86" rx="18" fill="#232742"/>
+  <text x="378" y="292" fill="#d9ddff" font-family="Arial" font-size="31" font-weight="760" text-anchor="middle">Official RevenueCat MCP</text>
+  <text x="1080" y="292" fill="#b9f4d0" font-family="Arial" font-size="31" font-weight="760" text-anchor="middle">revcat CLI</text>
+
+  <g font-family="Arial" font-size="25">
+    <g>
+      <rect x="104" y="338" width="1392" height="82" rx="16" fill="#151827"/>
+      <text x="132" y="372" fill="#7f89b8" font-size="21" font-weight="760">MODE</text>
+      <text x="292" y="382" fill="#eef0ff" font-weight="650">Natural-language tool calls</text>
+      <text x="836" y="382" fill="#eef0ff" font-weight="650">Replayable shell commands</text>
+    </g>
+
+    <g>
+      <rect x="104" y="432" width="1392" height="96" rx="16" fill="#1b1e31"/>
+      <text x="132" y="468" fill="#7f89b8" font-size="21" font-weight="760">AUTH</text>
+      <text x="292" y="462" fill="#eef0ff" font-weight="650">OAuth where supported,</text>
+      <text x="292" y="494" fill="#c7cbea">or project-specific API keys</text>
+      <text x="836" y="462" fill="#eef0ff" font-weight="650">One OAuth profile,</text>
+      <text x="836" y="494" fill="#c7cbea">then repo-local project binding</text>
+    </g>
+
+    <g>
+      <rect x="104" y="540" width="1392" height="96" rx="16" fill="#151827"/>
+      <text x="132" y="576" fill="#7f89b8" font-size="21" font-weight="760">CONTEXT</text>
+      <text x="292" y="570" fill="#eef0ff" font-weight="650">Agent must select/know</text>
+      <text x="292" y="602" fill="#c7cbea">the target project</text>
+      <text x="836" y="570" fill="#eef0ff" font-weight="650">This repo -> this project</text>
+      <text x="836" y="602" fill="#c7cbea">plus selected apps</text>
+    </g>
+
+    <g>
+      <rect x="104" y="648" width="1392" height="96" rx="16" fill="#1b1e31"/>
+      <text x="132" y="684" fill="#7f89b8" font-size="21" font-weight="760">SETUP</text>
+      <text x="292" y="678" fill="#eef0ff" font-weight="650">Manage apps, products,</text>
+      <text x="292" y="710" fill="#c7cbea">offerings, packages</text>
+      <text x="836" y="678" fill="#eef0ff" font-weight="650">Create projects, add/remove apps,</text>
+      <text x="836" y="710" fill="#c7cbea">SDK keys, StoreKit config</text>
+    </g>
+
+    <g>
+      <rect x="104" y="756" width="1392" height="96" rx="16" fill="#151827"/>
+      <text x="132" y="792" fill="#7f89b8" font-size="21" font-weight="760">OPS</text>
+      <text x="292" y="786" fill="#eef0ff" font-weight="650">Great inside AI clients</text>
+      <text x="292" y="818" fill="#c7cbea">for conversational setup</text>
+      <text x="836" y="786" fill="#eef0ff" font-weight="650">CI gates, dry-runs, JSON, logs,</text>
+      <text x="836" y="818" fill="#c7cbea">webhooks, audit, customer debug</text>
+    </g>
+  </g>
+
+  <line x1="770" y1="238" x2="770" y2="852" stroke="#343954" stroke-width="2"/>
+  <text x="104" y="900" fill="#8791bd" font-family="Arial" font-size="22">Not MCP vs CLI. Natural-language setup vs deterministic agent operations.</text>
+</svg>

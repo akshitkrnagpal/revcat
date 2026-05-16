@@ -5,34 +5,51 @@
 [![Docs](https://img.shields.io/badge/docs-revcat.vercel.app-7c8aff)](https://revcat.vercel.app)
 [![Go](https://img.shields.io/github/go-mod/go-version/akshitkrnagpal/revcat)](./go.mod)
 
-The RevenueCat CLI for terminal-first product teams. Debug customers, inspect catalog wiring, ship paywall updates, manage webhooks, and pull metrics without clicking through the dashboard.
+The agent-first CLI for RevenueCat. Pin one RevenueCat project to one repo, then let Codex, Claude Code, Cursor, CI, and shell scripts create projects/apps, inspect catalog wiring, debug customers, publish paywall updates, and verify launch state with exact commands, JSON output, dry-runs, and replayable logs.
 
-![revcat demo](./demo/demo.gif)
+![revcat agent-first demo](./demo/agent-first.gif)
 
 ```sh
-revcat auth login                        # browser OAuth, saves to ~/.revcat/config.json
-cd ~/your-repo && revcat init            # bind this repo to a project
-revcat subscribers info app_user_123
-revcat metrics overview
-revcat publish offering pro --paywall ./paywalls/pro.json
+revcat auth login
+revcat projects create --name Acme
+revcat apps create --type app_store --bundle com.acme.app
+cd ~/your-repo && revcat init            # bind this repo to one project + selected apps
+revcat subscriptions search ABC123XYZ --output json
+revcat doctor
 ```
 
 ## Why
 
-RevenueCat ships a dashboard, a REST API, and an MCP server, but no first-party CLI. revcat gives you a fast, scriptable surface for the jobs that are slow or repetitive in the dashboard:
+RevenueCat ships a dashboard, a REST API, and an official MCP server. Those are useful surfaces, but agents working inside code repos need something more durable than a conversational tool call: project context that travels with the repo, commands that can be replayed, output that can be parsed, and health checks that can fail CI.
 
+revcat gives agents and humans a deterministic ops surface for RevenueCat:
+
+- create projects and add, update, or remove apps from the terminal
+- bind a repo to one project plus selected apps with `revcat init`
 - debug "paid but no premium" support tickets from a store transaction id
-- inspect offerings, packages, products, entitlements, and paywalls
+- inspect offerings, packages, products, entitlements, paywalls, SDK keys, and StoreKit config
 - ship paywall config changes and set the current offering in one command
 - grant, revoke, refund, transfer, and inspect customer state
 - check webhooks, audit logs, charts, metrics, and project configuration
-- give CI, scripts, and agents JSON output without another flag
+- give CI, scripts, and agents JSON output, dry-runs, and exit codes they can trust
 
 Output is a colored table when you're at a terminal and JSON when you're piping into a script - no `--json` ceremony.
+
+## MCP vs CLI
+
+The official RevenueCat MCP is a natural-language setup surface. revcat is the repo-pinned operations surface for agents that need exact commands, logs, JSON, and CI gates.
+
+![RevenueCat MCP vs revcat CLI comparison](./demo/mcp-vs-cli.png)
 
 ## Demos
 
 All demo GIFs are hermetic recordings backed by local fixtures in [`demo/mock-bin`](./demo/mock-bin/). They show real command syntax without touching a live RevenueCat project.
+
+### Agent-first RevenueCat ops
+
+Run commands from a repo, inherit the right project context, emit JSON for the next step, and leave a health gate that can fail CI.
+
+![revcat agent-first demo](./demo/agent-first.gif)
 
 ### Ship a paywall update
 

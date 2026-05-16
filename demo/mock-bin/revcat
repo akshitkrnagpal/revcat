@@ -50,10 +50,22 @@ validation    ok
 OUT
     ;;
 
+  "subscriptions search 1000000123456789 --output json")
+    cat <<'OUT'
+{"id":"sub_demo_123","customer":"app_user_demo","store":"app_store","status":"active"}
+OUT
+    ;;
+
   "subscriptions search 1000000123456789")
     cat <<'OUT'
 id             customer       store      status
 sub_demo_123   app_user_demo  app_store  active
+OUT
+    ;;
+
+  "subscribers info app_user_demo --output json")
+    cat <<'OUT'
+{"customer":"app_user_demo","active":"premium","subscription":"sub_demo_123","renews":"2026-06-17"}
 OUT
     ;;
 
@@ -126,6 +138,14 @@ time        actor          action
 OUT
     ;;
 
+  "audit-logs list --output json")
+    cat <<'OUT'
+{"time":"10:42 UTC","actor":"akshit","action":"offering.default.updated"}
+{"time":"10:39 UTC","actor":"support-bot","action":"customer.app_user_demo.granted"}
+{"time":"10:31 UTC","actor":"revenuecat","action":"webhook.wh_prod.delivered"}
+OUT
+    ;;
+
   "metrics overview")
     cat <<'OUT'
 metric        value
@@ -133,6 +153,16 @@ MRR           $24,820
 ARR           $297,840
 active subs   1,842
 refund rate   1.7%
+OUT
+    ;;
+
+  "doctor")
+    cat <<'OUT'
+check              status
+auth               OK
+project context    OK
+api reachability   OK
+webhooks           OK
 OUT
     ;;
 
