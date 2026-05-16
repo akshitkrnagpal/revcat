@@ -247,7 +247,7 @@ func pickApps(parent context.Context, cmd *cobra.Command, resolved *authstore.Re
 	}
 	var picked []int
 	if err := survey.AskOne(&survey.MultiSelect{
-		Message: "Which apps to record? (space to toggle, enter to confirm; leave empty to skip)",
+		Message: "Which apps to record? (all selected by default; space to toggle, enter to confirm)",
 		Options: options,
 		Default: defaults,
 	}, &picked); err != nil {
