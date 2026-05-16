@@ -67,7 +67,7 @@ The credential resolved fine but no project id is set.
 
 ## "compile error" / build fails on `go install`
 
-revcat targets Go 1.23+. Check with `go version`. Older Go won't build the cobra dependency tree.
+revcat targets Go 1.26+. Check with `go version`. Older Go won't build the cobra dependency tree.
 
 ## `revcat publish offering --paywall` keeps a no-op for me
 

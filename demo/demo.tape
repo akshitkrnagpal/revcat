@@ -8,36 +8,34 @@
 #   cd demo
 #   vhs demo.tape          # produces demo.gif
 #
-# Assumes:
-#   - revcat is on $PATH (brew install akshitkrnagpal/tap/revcat)
-#   - this directory has been bound to a project (cd demo && revcat init)
-#     so revcat picks up project context from ./.revcat/config.json,
-#     OR REVCAT_REFRESH_TOKEN + REVCAT_PROJECT_ID are set in the env
-#   - the bound project has an offering called "default" (or edit below)
+# Hermetic by default:
+#   - prepends ./mock-bin to PATH so this recording never calls RevenueCat
+#   - shows real revcat command syntax against deterministic fixture output
 #####################################################################
 
 Output demo.gif
 
 Set Shell "zsh"
-Set FontSize 18
+Set FontSize 17
 Set Width 1280
-Set Height 480
+Set Height 560
 Set Theme "Catppuccin Mocha"
 Set Padding 24
-Set TypingSpeed 35ms
+Set TypingSpeed 28ms
 Set PlaybackSpeed 1.0
 
 # Custom prompt: simple $, no zsh continuation `>`.
 Hide
 Type 'export PS1="%F{12}$ %f"' Enter
+Type 'export PATH="$PWD/mock-bin:$PATH"' Enter
 Ctrl+L
 Show
 
-# 1. Frame the input. Show the paywall body that will ship.
-Type "cat paywall.json | jq"
+# 1. Show a compact summary of the paywall body that will ship.
+Type "jq '{title: .config.title, cta: .config.cta, packages: .config.package_ids}' paywall.json"
 Sleep 200ms
 Enter
-Sleep 1500ms
+Sleep 1400ms
 
 # 2. Ship it. The orchestrator does both steps - PUT paywall + set
 #    offering as current - in one shot. --dry-run prints the plan so
@@ -45,13 +43,13 @@ Sleep 1500ms
 Type "revcat publish offering default --paywall ./paywall.json --dry-run --confirm"
 Sleep 200ms
 Enter
-Sleep 2500ms
+Sleep 2200ms
 
 # 3. Confirm. Read-only, just shows that the offering is what the SDK
 #    will see.
 Type "revcat offerings view default"
 Sleep 200ms
 Enter
-Sleep 1500ms
+Sleep 1600ms
 
 Sleep 600ms

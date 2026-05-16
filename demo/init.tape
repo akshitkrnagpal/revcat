@@ -9,33 +9,33 @@
 #
 # Regenerate with:
 #   brew install vhs
-#   export REVCAT_REFRESH_TOKEN=rtk_...
-#   export REVCAT_PROJECT_ID=proj_...
 #   cd demo
 #   vhs init.tape          # produces init.gif
+#
+# Hermetic by default: uses ./mock-bin/revcat and never calls RevenueCat.
 #####################################################################
 
 Output init.gif
 
 Set Shell "zsh"
-Set FontSize 18
+Set FontSize 17
 Set Width 1280
-Set Height 560
+Set Height 600
 Set Theme "Catppuccin Mocha"
 Set Padding 24
-Set TypingSpeed 35ms
+Set TypingSpeed 28ms
 Set PlaybackSpeed 1.0
 
-# Setup: throwaway sandbox dir, simple prompt, project_id pre-resolved
-# from the env so the survey picker doesn't gate the recording.
+# Setup: throwaway sandbox dir, simple prompt, mock revcat on PATH.
 Hide
 Type 'export PS1="%F{12}$ %f"' Enter
+Type 'export DEMO_DIR="$PWD"; export PATH="$DEMO_DIR/mock-bin:$PATH"' Enter
 Type 'cd $(mktemp -d)' Enter
 Ctrl+L
 Show
 
 # 1. Empty directory. Same shape every reader's repo starts as.
-Type "ls -la"
+Type "find . -maxdepth 2 -type f | sort"
 Sleep 200ms
 Enter
 Sleep 800ms
@@ -45,24 +45,24 @@ Sleep 800ms
 Type "revcat init --no-apps"
 Sleep 200ms
 Enter
-Sleep 2500ms
+Sleep 2200ms
 
 # 3. Two files now exist. revcat.toml is the committed half.
-Type "ls -la"
+Type "find . -maxdepth 2 -type f | sort"
 Sleep 200ms
 Enter
-Sleep 1200ms
+Sleep 1000ms
 
 Type "cat revcat.toml"
 Sleep 200ms
 Enter
-Sleep 1500ms
+Sleep 1200ms
 
 # 4. Project context is now automatic. No --project-id, no env, just
 #    works from cwd.
 Type "revcat auth status"
 Sleep 200ms
 Enter
-Sleep 2000ms
+Sleep 1800ms
 
 Sleep 600ms
