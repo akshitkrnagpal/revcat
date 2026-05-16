@@ -2,6 +2,27 @@
 
 Notable changes per release. Dates are UTC.
 
+## [v0.7.0](https://github.com/akshitkrnagpal/revcat/releases/tag/v0.7.0) - 2026-05-16
+
+Tightens the automation-facing edges before the public push: health checks now fail loudly, search commands no longer truncate after the first API page, and the release path is covered by CI.
+
+### Fixed
+
+- `revcat doctor` now exits non-zero when credential resolution or API reachability checks fail, while still rendering the diagnostic table first. This makes the command safe for scripts and CI gates.
+- Subscription and purchase search now follows `next_page` with `starting_after` until all pages are returned, instead of silently stopping at the first 100 records.
+
+### Changed
+
+- `revcat init` app selection copy now matches the actual default-all-selected behavior.
+- Root help now describes the mode-0600 config file auth model instead of the removed OS-keychain backend.
+- README/demo assets were refreshed, including a new `init` flow GIF.
+
+### Internal
+
+- Added GitHub Actions CI for `make verify`.
+- Added API tests covering subscription and purchase search pagination.
+- Approved and committed the docs workspace file so docs builds have explicit package-manager metadata.
+
 ## [v0.6.0](https://github.com/akshitkrnagpal/revcat/releases/tag/v0.6.0) - 2026-05-02
 
 Drops the keyring backend. `~/.revcat/config.json` (mode 0600) is now the only global credential store.
