@@ -6,6 +6,7 @@ package doctor
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"runtime"
 	"time"
@@ -23,6 +24,8 @@ var Cmd = &cobra.Command{
 	RunE:  runDoctor,
 }
 
+var errDoctorFailed = errors.New("one or more checks failed")
+
 func runDoctor(cmd *cobra.Command, args []string) error {
 	rows := [][]any{
 		{"OK", "platform", fmt.Sprintf("%s/%s %s", runtime.GOOS, runtime.GOARCH, runtime.Version())},
@@ -32,7 +35,7 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 	client, resolved, err := cliutil.Client(cmd)
 	if err != nil {
 		rows = append(rows, []any{"FAIL", "credential resolve", err.Error()})
-		return output.Table([]string{"status", "check", "detail"}, rows)
+		return renderRows(rows, true)
 	}
 	rows = append(rows, []any{"OK", "active credential", fmt.Sprintf("%s (source=%s)", resolved.Profile.Name, resolved.Source)})
 
@@ -41,7 +44,7 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 	projects, err := client.ListProjects(ctx)
 	if err != nil {
 		rows = append(rows, []any{"FAIL", "api reach", err.Error()})
-		return output.Table([]string{"status", "check", "detail"}, rows)
+		return renderRows(rows, true)
 	}
 	rows = append(rows, []any{"OK", "api reach", fmt.Sprintf("ok, %d project access", len(projects))})
 
@@ -51,5 +54,15 @@ func runDoctor(cmd *cobra.Command, args []string) error {
 		rows = append(rows, []any{"WARN", "project context", "none - run `revcat init` or pass --project-id"})
 	}
 
-	return output.Table([]string{"status", "check", "detail"}, rows)
+	return renderRows(rows, false)
+}
+
+func renderRows(rows [][]any, failed bool) error {
+	if err := output.Table([]string{"status", "check", "detail"}, rows); err != nil {
+		return err
+	}
+	if failed {
+		return errDoctorFailed
+	}
+	return nil
 }
