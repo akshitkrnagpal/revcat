@@ -22,7 +22,7 @@ import { Card, CardGrid, Code } from "@astrojs/starlight/components";
 Sign in once, then everything is one command away.
 
 ```sh
-# install (Go 1.23+)
+# install (Go 1.26+)
 go install github.com/akshitkrnagpal/revcat/cmd/revcat@latest
 
 # auth (browser OAuth)
@@ -61,6 +61,20 @@ revcat publish offering pro --paywall ./paywalls/pro.json
     charts, audit logs, webhooks, virtual currencies.
   </Card>
 </CardGrid>
+
+## Demo workflows
+
+### Ship a paywall update
+
+![revcat paywall publish demo](https://raw.githubusercontent.com/akshitkrnagpal/revcat/main/demo/demo.gif)
+
+### Debug customer access
+
+![revcat customer debug demo](https://raw.githubusercontent.com/akshitkrnagpal/revcat/main/demo/customer-debug.gif)
+
+### Inspect catalog wiring
+
+![revcat catalog demo](https://raw.githubusercontent.com/akshitkrnagpal/revcat/main/demo/catalog.gif)
 
 ## What's next
 

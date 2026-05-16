@@ -5,7 +5,7 @@
 [![Docs](https://img.shields.io/badge/docs-revcat.vercel.app-7c8aff)](https://revcat.vercel.app)
 [![Go](https://img.shields.io/github/go-mod/go-version/akshitkrnagpal/revcat)](./go.mod)
 
-The RevenueCat CLI. Run your RevenueCat project from the terminal instead of clicking through the dashboard.
+The RevenueCat CLI for terminal-first product teams. Debug customers, inspect catalog wiring, ship paywall updates, manage webhooks, and pull metrics without clicking through the dashboard.
 
 ![revcat demo](./demo/demo.gif)
 
@@ -19,9 +19,50 @@ revcat publish offering pro --paywall ./paywalls/pro.json
 
 ## Why
 
-RevenueCat ships a dashboard, a REST API, and an MCP server, but no first-party CLI. revcat covers the v2 REST API surface accessible via OAuth: full CRUD on entitlements, offerings, packages, products, paywalls, webhooks, virtual currencies; per-customer grants/refunds/transfers; metrics + charts; audit-logs.
+RevenueCat ships a dashboard, a REST API, and an MCP server, but no first-party CLI. revcat gives you a fast, scriptable surface for the jobs that are slow or repetitive in the dashboard:
+
+- debug "paid but no premium" support tickets from a store transaction id
+- inspect offerings, packages, products, entitlements, and paywalls
+- ship paywall config changes and set the current offering in one command
+- grant, revoke, refund, transfer, and inspect customer state
+- check webhooks, audit logs, charts, metrics, and project configuration
+- give CI, scripts, and agents JSON output without another flag
 
 Output is a colored table when you're at a terminal and JSON when you're piping into a script - no `--json` ceremony.
+
+## Demos
+
+All demo GIFs are hermetic recordings backed by local fixtures in [`demo/mock-bin`](./demo/mock-bin/). They show real command syntax without touching a live RevenueCat project.
+
+### Ship a paywall update
+
+Push a paywall config and keep the offering current from the terminal.
+
+![revcat paywall publish demo](./demo/demo.gif)
+
+### Bootstrap project context
+
+Bind a repo once so future commands inherit the right project and credentials.
+
+![revcat init demo](./demo/init.gif)
+
+### Debug and fix customer access
+
+Resolve a store transaction id, inspect the customer, and grant goodwill access.
+
+![revcat customer debug demo](./demo/customer-debug.gif)
+
+### Inspect catalog wiring
+
+Check offerings, products, and package membership without opening the dashboard.
+
+![revcat catalog demo](./demo/catalog.gif)
+
+### Monitor operations
+
+Review webhooks, audit logs, and headline metrics while launch traffic is coming in.
+
+![revcat ops demo](./demo/ops.gif)
 
 ## Install
 
@@ -183,10 +224,10 @@ Full docs at <https://revcat.vercel.app> - install, quickstart, every command, c
 
 revcat ships four [Agent Skills](./skills/) (open standard) so Claude Code, Cursor, and Codex can compose revcat commands accurately:
 
-- `revcat-getting-started` — install, auth, top-level command map
-- `revcat-commands` — real syntax + examples for every subcommand
-- `revcat-troubleshooting` — common errors and fixes
-- `revcat-storefront-debug` — 7-step diagnostic for "the SDK sees 0 packages from my offering"
+- `revcat-getting-started` - install, auth, top-level command map
+- `revcat-commands` - real syntax + examples for every subcommand
+- `revcat-troubleshooting` - common errors and fixes
+- `revcat-storefront-debug` - 7-step diagnostic for "the SDK sees 0 packages from my offering"
 
 Install via [skills.sh](https://skills.sh) (auto-detects your agent):
 
@@ -194,7 +235,7 @@ Install via [skills.sh](https://skills.sh) (auto-detects your agent):
 npx skills add akshitkrnagpal/revcat
 ```
 
-Or manually — see [`skills/README.md`](./skills/README.md) for the Claude Code / Cursor / Codex paths.
+Or manually - see [`skills/README.md`](./skills/README.md) for the Claude Code / Cursor / Codex paths.
 
 ## License
 

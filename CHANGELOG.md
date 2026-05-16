@@ -2,6 +2,23 @@
 
 Notable changes per release. Dates are UTC.
 
+## [v0.6.1](https://github.com/akshitkrnagpal/revcat/releases/tag/v0.6.1) - 2026-05-17
+
+Release hardening for the public launch.
+
+### Fixed
+
+- `revcat doctor` now exits non-zero when a health check fails, so CI and agents can trust it as a gate.
+- `revcat subscriptions search` and `revcat purchases search` now follow `next_page` cursors instead of silently returning only the first page.
+- `revcat init` now describes its app-selection default accurately: all apps are selected by default.
+- Root help and docs now describe the current mode-0600 file-backed auth model instead of the removed keychain backend.
+
+### Added
+
+- GitHub Actions CI for `make verify` and the docs build.
+- pnpm 11 build-script approvals so docs install and build non-interactively.
+- Hermetic marketing/demo GIFs for paywall publishing, project bootstrap, customer debugging, catalog inspection, and operations checks.
+
 ## [v0.6.0](https://github.com/akshitkrnagpal/revcat/releases/tag/v0.6.0) - 2026-05-02
 
 Drops the keyring backend. `~/.revcat/config.json` (mode 0600) is now the only global credential store.
