@@ -5,6 +5,8 @@ description: Walk through a real support ticket end-to-end with revcat.
 
 The single most common RC support flow: a customer contacts you saying they paid but the app doesn't unlock the paid features. Here's how to debug it without leaving the terminal.
 
+![revcat customer debug demo](https://raw.githubusercontent.com/akshitkrnagpal/revcat/main/demo/customer-debug.gif)
+
 ## 1. Find the customer
 
 If you have the **store transaction id** from their receipt or App Store / Play / Stripe email:

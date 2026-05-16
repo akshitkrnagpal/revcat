@@ -81,6 +81,7 @@ revcat entitlements detach <id> <product_id> [<product_id> ...]
 
 revcat offerings list                           # current marked with *
 revcat offerings view <id>
+revcat offerings preview [<id>] [--platform ios|android|web] [--as <user_id>]
 revcat offerings create --id pro --display-name "Pro" | --file ./offering.json
 revcat offerings update <id> --display-name "..." | --file ./patch.json
 revcat offerings delete <id> [-y]
