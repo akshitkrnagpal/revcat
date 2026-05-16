@@ -6,8 +6,8 @@ import (
 
 	appscmd "github.com/akshitkrnagpal/revcat/commands/apps"
 	auditlogscmd "github.com/akshitkrnagpal/revcat/commands/auditlogs"
-	collaboratorscmd "github.com/akshitkrnagpal/revcat/commands/collaborators"
 	authcmd "github.com/akshitkrnagpal/revcat/commands/auth"
+	collaboratorscmd "github.com/akshitkrnagpal/revcat/commands/collaborators"
 	doctorcmd "github.com/akshitkrnagpal/revcat/commands/doctor"
 	entitlementscmd "github.com/akshitkrnagpal/revcat/commands/entitlements"
 	initcmd "github.com/akshitkrnagpal/revcat/commands/initcmd"
@@ -15,16 +15,16 @@ import (
 	metricscmd "github.com/akshitkrnagpal/revcat/commands/metrics"
 	offeringscmd "github.com/akshitkrnagpal/revcat/commands/offerings"
 	packagescmd "github.com/akshitkrnagpal/revcat/commands/packages"
+	paywallscmd "github.com/akshitkrnagpal/revcat/commands/paywalls"
 	productscmd "github.com/akshitkrnagpal/revcat/commands/products"
 	projectscmd "github.com/akshitkrnagpal/revcat/commands/projects"
 	publishcmd "github.com/akshitkrnagpal/revcat/commands/publish"
 	purchasescmd "github.com/akshitkrnagpal/revcat/commands/purchases"
 	subscriberscmd "github.com/akshitkrnagpal/revcat/commands/subscribers"
 	subscriptionscmd "github.com/akshitkrnagpal/revcat/commands/subscriptions"
-	paywallscmd "github.com/akshitkrnagpal/revcat/commands/paywalls"
+	versioncmd "github.com/akshitkrnagpal/revcat/commands/version"
 	virtualcurrenciescmd "github.com/akshitkrnagpal/revcat/commands/virtualcurrencies"
 	webhookscmd "github.com/akshitkrnagpal/revcat/commands/webhooks"
-	versioncmd "github.com/akshitkrnagpal/revcat/commands/version"
 	"github.com/akshitkrnagpal/revcat/internal/output"
 )
 
@@ -41,14 +41,14 @@ var (
 // Global flags. Stored at package level so subcommands can read them via
 // the cmd.Root() ancestor without prop drilling.
 type globalFlags struct {
-	Verbose        bool
-	Quiet          bool
-	NoColor        bool
-	Debug          bool
-	Output         string
-	Pretty         bool
-	Profile        string
-	ProjectID      string
+	Verbose   bool
+	Quiet     bool
+	NoColor   bool
+	Debug     bool
+	Output    string
+	Pretty    bool
+	Profile   string
+	ProjectID string
 }
 
 var Flags = &globalFlags{}
@@ -68,7 +68,7 @@ var rootCmd = &cobra.Command{
 	Long: `revcat is a CLI for managing RevenueCat projects from the terminal.
 
 Imperative verbs over declarative state. JSON-first when piped, tables when
-interactive. Auth lives in your OS keychain.`,
+interactive. Auth uses mode-0600 config files plus optional per-repo context.`,
 	Version:           Version,
 	SilenceUsage:      true,
 	SilenceErrors:     true,
