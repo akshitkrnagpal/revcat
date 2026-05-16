@@ -10,18 +10,18 @@ import (
 // SubscriptionFull is the full v2 subscription record (more fields than the
 // embedded Subscription type used in customer snapshots).
 type SubscriptionFull struct {
-	ID                 string   `json:"id"`
-	Status             string   `json:"status"`
-	ProductID          string   `json:"product_id"`
-	Store              string   `json:"store"`
-	StartsAt           int64    `json:"starts_at"`
-	CurrentEndsAt      int64    `json:"current_period_ends_at,omitempty"`
-	WillRenew          bool     `json:"will_renew"`
-	IsTrial            bool     `json:"is_in_trial_period"`
-	IsSandbox          bool     `json:"is_sandbox"`
-	UnsubscribeAt      int64    `json:"unsubscribe_detected_at,omitempty"`
-	CustomerID         string   `json:"customer_id,omitempty"`
-	EntitlementIDs     []string `json:"entitlement_ids,omitempty"`
+	ID             string   `json:"id"`
+	Status         string   `json:"status"`
+	ProductID      string   `json:"product_id"`
+	Store          string   `json:"store"`
+	StartsAt       int64    `json:"starts_at"`
+	CurrentEndsAt  int64    `json:"current_period_ends_at,omitempty"`
+	WillRenew      bool     `json:"will_renew"`
+	IsTrial        bool     `json:"is_in_trial_period"`
+	IsSandbox      bool     `json:"is_sandbox"`
+	UnsubscribeAt  int64    `json:"unsubscribe_detected_at,omitempty"`
+	CustomerID     string   `json:"customer_id,omitempty"`
+	EntitlementIDs []string `json:"entitlement_ids,omitempty"`
 }
 
 // Transaction is a single billing event under a subscription.
@@ -129,19 +129,23 @@ func (c *Client) SearchSubscriptions(ctx context.Context, query string) ([]Subsc
 	q := url.Values{}
 	q.Set("query", query)
 	q.Set("limit", "100")
-	path := c.projectPath("/subscriptions/search?" + q.Encode())
-	var page listResp[SubscriptionFull]
-	if err := c.Do(ctx, "GET", path, nil, &page); err != nil {
-		var apiErr *APIError
-		if errors.As(err, &apiErr) && apiErr.IsNotFound() {
-			return []SubscriptionFull{}, nil
+	all := []SubscriptionFull{}
+	for {
+		path := c.projectPath("/subscriptions/search?" + q.Encode())
+		var page listResp[SubscriptionFull]
+		if err := c.Do(ctx, "GET", path, nil, &page); err != nil {
+			var apiErr *APIError
+			if errors.As(err, &apiErr) && apiErr.IsNotFound() {
+				return []SubscriptionFull{}, nil
+			}
+			return nil, err
 		}
-		return nil, err
+		all = append(all, page.Items...)
+		if page.Next == "" {
+			return all, nil
+		}
+		q.Set("starting_after", page.Next)
 	}
-	if page.Items == nil {
-		return []SubscriptionFull{}, nil
-	}
-	return page.Items, nil
 }
 
 // PurchaseFull is the full v2 non-renewing purchase record.
@@ -213,19 +217,23 @@ func (c *Client) SearchPurchases(ctx context.Context, query string) ([]PurchaseF
 	q := url.Values{}
 	q.Set("query", query)
 	q.Set("limit", "100")
-	path := c.projectPath("/purchases/search?" + q.Encode())
-	var page listResp[PurchaseFull]
-	if err := c.Do(ctx, "GET", path, nil, &page); err != nil {
-		var apiErr *APIError
-		if errors.As(err, &apiErr) && apiErr.IsNotFound() {
-			return []PurchaseFull{}, nil
+	all := []PurchaseFull{}
+	for {
+		path := c.projectPath("/purchases/search?" + q.Encode())
+		var page listResp[PurchaseFull]
+		if err := c.Do(ctx, "GET", path, nil, &page); err != nil {
+			var apiErr *APIError
+			if errors.As(err, &apiErr) && apiErr.IsNotFound() {
+				return []PurchaseFull{}, nil
+			}
+			return nil, err
 		}
-		return nil, err
+		all = append(all, page.Items...)
+		if page.Next == "" {
+			return all, nil
+		}
+		q.Set("starting_after", page.Next)
 	}
-	if page.Items == nil {
-		return []PurchaseFull{}, nil
-	}
-	return page.Items, nil
 }
 
 // GetInvoice fetches one invoice by id.
