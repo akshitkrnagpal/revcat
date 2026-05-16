@@ -2,9 +2,9 @@
 
 Notable changes per release. Dates are UTC.
 
-## [v0.6.1](https://github.com/akshitkrnagpal/revcat/releases/tag/v0.6.1) - 2026-05-17
+## [v0.7.0](https://github.com/akshitkrnagpal/revcat/releases/tag/v0.7.0) - 2026-05-16
 
-Release hardening for the public launch.
+Release hardening and launch polish for the public push: health checks now fail loudly, search commands no longer truncate after the first API page, and the docs/demo surface is ready for broader distribution.
 
 ### Fixed
 
@@ -18,6 +18,7 @@ Release hardening for the public launch.
 - GitHub Actions CI for `make verify` and the docs build.
 - pnpm 11 build-script approvals so docs install and build non-interactively.
 - Hermetic marketing/demo GIFs for paywall publishing, project bootstrap, customer debugging, catalog inspection, and operations checks.
+- API tests covering subscription and purchase search pagination.
 
 ## [v0.6.0](https://github.com/akshitkrnagpal/revcat/releases/tag/v0.6.0) - 2026-05-02
 
