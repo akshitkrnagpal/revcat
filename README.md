@@ -28,6 +28,9 @@ Output is a colored table when you're at a terminal and JSON when you're piping 
 ```sh
 brew install akshitkrnagpal/tap/revcat
 
+# or via npm (any platform)
+npm install -g revcat
+
 # or, from source (Go 1.26+)
 go install github.com/akshitkrnagpal/revcat/cmd/revcat@latest
 ```
