@@ -105,7 +105,11 @@ Example body:
       "type": "subscription",
       "display_name": "Monthly",
       "app_id": "app_xxx"
-    }`,
+    }
+
+For Test Store products, RevenueCat v2 does not expose price create/update
+endpoints. After creating the product, set its price in the RevenueCat
+dashboard or the SDK will not show packages that contain it.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		body, err := loadJSON(createFile)
 		if err != nil {
@@ -122,11 +126,20 @@ Example body:
 			return err
 		}
 		output.Success("created %s", p.ID)
+		if needsTestStorePriceReminder(body) {
+			output.Info("Test Store price reminder: RevenueCat v2 does not expose price create/update endpoints. Set the price in the RevenueCat dashboard before using this product from the SDK.")
+		}
 		if output.IsJSON() {
 			return output.JSON(p)
 		}
 		return nil
 	},
+}
+
+func needsTestStorePriceReminder(body map[string]any) bool {
+	_, hasTitle := body["title"]
+	_, hasDisplayName := body["display_name"]
+	return hasTitle && !hasDisplayName
 }
 
 func init() {

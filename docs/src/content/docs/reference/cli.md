@@ -1254,6 +1254,10 @@ Example body:
       "display_name": "Monthly",
       "app_id": "app_xxx"
     }
+
+For Test Store products, RevenueCat v2 does not expose price create/update
+endpoints. After creating the product, set its price in the RevenueCat
+dashboard or the SDK will not show packages that contain it.
 ```
 
 **Usage**
