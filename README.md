@@ -1,4 +1,4 @@
-# revcat
+<img src="./docs/public/og.png" alt="revcat - The RevenueCat CLI for agents" width="100%">
 
 [![Release](https://img.shields.io/github/v/release/akshitkrnagpal/revcat?label=release)](https://github.com/akshitkrnagpal/revcat/releases/latest)
 [![License](https://img.shields.io/github/license/akshitkrnagpal/revcat)](./LICENSE)
