@@ -2,6 +2,16 @@
 
 Notable changes per release. Dates are UTC.
 
+## [v0.8.0](https://github.com/akshitkrnagpal/revcat/releases/tag/v0.8.0) - 2026-11-26
+
+Final release. revcat is deprecated and no longer maintained. Please use the official RevenueCat CLI: https://github.com/RevenueCat/cli
+
+### Changed
+
+- Every command prints a one-line deprecation notice to stderr. stdout is unchanged, so piped JSON still parses. Set `REVCAT_NO_DEPRECATION_NOTICE=1` to silence it.
+- The Homebrew formula is marked deprecated, and `brew` points to `RevenueCat/tap/rc` as the replacement.
+- The README and docs site show a deprecation notice linking to the official CLI.
+
 ## [v0.7.0](https://github.com/akshitkrnagpal/revcat/releases/tag/v0.7.0) - 2026-05-16
 
 Release hardening and launch polish for the public push: health checks now fail loudly, search commands no longer truncate after the first API page, and the docs/demo surface is ready for broader distribution.

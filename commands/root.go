@@ -2,6 +2,9 @@
 package commands
 
 import (
+	"fmt"
+	"os"
+
 	"github.com/spf13/cobra"
 
 	appscmd "github.com/akshitkrnagpal/revcat/commands/apps"
@@ -65,7 +68,9 @@ func RootCmd() *cobra.Command { return rootCmd }
 var rootCmd = &cobra.Command{
 	Use:   "revcat",
 	Short: "The RevenueCat CLI",
-	Long: `revcat is a CLI for managing RevenueCat projects from the terminal.
+	Long: `DEPRECATED: ` + DeprecationNotice + `
+
+revcat is a CLI for managing RevenueCat projects from the terminal.
 
 Imperative verbs over declarative state. JSON-first when piped, tables when
 interactive. Auth uses mode-0600 config files plus optional per-repo context.`,
@@ -74,6 +79,7 @@ interactive. Auth uses mode-0600 config files plus optional per-repo context.`,
 	SilenceErrors:     true,
 	DisableAutoGenTag: true,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		printDeprecationNotice(cmd)
 		output.Configure(output.Options{
 			Format:  Flags.Output,
 			Pretty:  Flags.Pretty,
@@ -82,6 +88,28 @@ interactive. Auth uses mode-0600 config files plus optional per-repo context.`,
 			Verbose: Flags.Verbose,
 		})
 	},
+}
+
+// DeprecationNotice is printed to stderr on every command run. revcat is
+// superseded by RevenueCat's official CLI.
+const DeprecationNotice = "revcat is deprecated and no longer maintained. Please use the official RevenueCat CLI: https://github.com/RevenueCat/cli"
+
+// envNoDeprecationNotice silences the notice for scripts that treat any
+// stderr output as a failure.
+const envNoDeprecationNotice = "REVCAT_NO_DEPRECATION_NOTICE"
+
+// printDeprecationNotice writes the one-line notice to stderr. stdout is
+// left untouched so piped JSON stays parseable. Shell completion requests
+// are skipped so tab completion never shows the notice.
+func printDeprecationNotice(cmd *cobra.Command) {
+	if os.Getenv(envNoDeprecationNotice) != "" {
+		return
+	}
+	switch cmd.Name() {
+	case cobra.ShellCompRequestCmd, cobra.ShellCompNoDescRequestCmd:
+		return
+	}
+	fmt.Fprintln(os.Stderr, "warning: "+DeprecationNotice)
 }
 
 // Execute runs the cobra root. main() exits 1 on non-nil error.

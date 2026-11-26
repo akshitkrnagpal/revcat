@@ -52,6 +52,10 @@ export default defineConfig({
         { tag: "meta", attrs: { name: "twitter:image", content: "https://revcat.vercel.app/og.png" } },
         { tag: "meta", attrs: { name: "twitter:image:alt", content: "revcat - the RevenueCat CLI" } },
       ],
+      // Site-wide deprecation notice (see src/components/Banner.astro).
+      components: {
+        Banner: "./src/components/Banner.astro",
+      },
       // Force dark by default; user can still toggle.
       customCss: ["./src/styles/custom.css"],
       sidebar: [

@@ -1,0 +1,27 @@
+---
+// Site-wide override of Starlight's Banner: every page shows the
+// deprecation notice. revcat is superseded by RevenueCat's official CLI.
+---
+
+<div class="deprecation-banner" role="note" data-pagefind-ignore>
+	<strong>revcat is deprecated and no longer maintained.</strong>
+	Please use the official RevenueCat CLI:
+	<a href="https://github.com/RevenueCat/cli">github.com/RevenueCat/cli</a>
+</div>
+
+<style>
+	.deprecation-banner {
+		padding: var(--sl-nav-pad-y) var(--sl-nav-pad-x);
+		background-color: var(--sl-color-orange-low);
+		color: var(--sl-color-orange-high);
+		border-bottom: 1px solid var(--sl-color-orange);
+		line-height: var(--sl-line-height-headings);
+		text-align: center;
+		text-wrap: balance;
+	}
+	.deprecation-banner a {
+		color: inherit;
+		font-weight: 600;
+		text-decoration: underline;
+	}
+</style>

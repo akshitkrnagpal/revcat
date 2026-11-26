@@ -61,8 +61,13 @@ brews:
       branch: main
     directory: Formula
     homepage: "https://github.com/akshitkrnagpal/revcat"
-    description: "The RevenueCat CLI"
+    description: "Deprecated RevenueCat CLI, use the official RevenueCat/tap/rc"
     license: "MIT"
+    # revcat is deprecated in favor of RevenueCat's official CLI. Homebrew
+    # prints: "revcat has been deprecated because it has been replaced by
+    # the official RevenueCat CLI!" followed by "brew install RevenueCat/tap/rc".
+    custom_block: |
+      deprecate! date: "2026-11-26", because: "has been replaced by the official RevenueCat CLI", replacement_formula: "RevenueCat/tap/rc"
     test: |
       system "#{bin}/revcat", "version"
     install: |
