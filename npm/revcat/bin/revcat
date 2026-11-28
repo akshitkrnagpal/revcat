@@ -1,0 +1,56 @@
+#!/usr/bin/env node
+// revcat npm shim. Resolves the matching platform package
+// (revcat-<platform>-<arch>) installed via optionalDependencies and
+// execs the native binary with the user's argv + stdio.
+//
+// One file by design - the shim is part of every install, so it has to
+// be self-contained, dependency-free, and small enough to skim.
+
+"use strict";
+
+const { spawnSync } = require("node:child_process");
+
+const SUPPORTED = {
+  "darwin-arm64": "revcat-darwin-arm64",
+  "darwin-x64":   "revcat-darwin-x64",
+  "linux-arm64":  "revcat-linux-arm64",
+  "linux-x64":    "revcat-linux-x64",
+  "win32-x64":    "revcat-win32-x64",
+};
+
+const key = `${process.platform}-${process.arch}`;
+const pkg = SUPPORTED[key];
+if (!pkg) {
+  console.error(
+    `revcat: no prebuilt binary for ${key}.\n` +
+    `Supported platforms: ${Object.keys(SUPPORTED).join(", ")}.\n` +
+    `Build from source: https://github.com/akshitkrnagpal/revcat`
+  );
+  process.exit(1);
+}
+
+const binName = process.platform === "win32" ? "revcat.exe" : "revcat";
+
+let binaryPath;
+try {
+  binaryPath = require.resolve(`${pkg}/bin/${binName}`);
+} catch (_) {
+  console.error(
+    `revcat: the ${pkg} package is not installed.\n` +
+    `This usually means npm skipped optionalDependencies. Try:\n` +
+    `  npm install ${pkg}\n` +
+    `Or reinstall revcat with optional deps enabled:\n` +
+    `  npm install --include=optional revcat`
+  );
+  process.exit(1);
+}
+
+const result = spawnSync(binaryPath, process.argv.slice(2), {
+  stdio: "inherit",
+  windowsHide: true,
+});
+if (result.error) {
+  console.error(`revcat: failed to spawn binary: ${result.error.message}`);
+  process.exit(1);
+}
+process.exit(result.status ?? 1);

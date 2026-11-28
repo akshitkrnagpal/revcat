@@ -1,0 +1,8 @@
+# Binaries are produced by scripts/npm-publish.mjs at release time, not
+# committed. The shim under npm/revcat/bin/ IS committed; everything
+# else is generated.
+revcat-darwin-arm64/bin/revcat
+revcat-darwin-x64/bin/revcat
+revcat-linux-arm64/bin/revcat
+revcat-linux-x64/bin/revcat
+revcat-win32-x64/bin/revcat.exe

@@ -1,0 +1,14 @@
+{
+  "name": "revcat-linux-arm64",
+  "version": "0.0.0",
+  "description": "The revcat CLI binary for linux-arm64. Installed automatically by `revcat`.",
+  "homepage": "https://github.com/akshitkrnagpal/revcat",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/akshitkrnagpal/revcat.git"
+  },
+  "license": "MIT",
+  "files": ["bin/revcat"],
+  "os": ["linux"],
+  "cpu": ["arm64"]
+}

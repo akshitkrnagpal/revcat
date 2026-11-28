@@ -17,6 +17,9 @@ An agent-first CLI for RevenueCat. Bind a repo to one RevenueCat project, then l
 ```sh
 brew install akshitkrnagpal/tap/revcat
 
+# or via npm (any platform)
+npm install -g revcat
+
 # or, from source (Go 1.26+)
 go install github.com/akshitkrnagpal/revcat/cmd/revcat@latest
 ```

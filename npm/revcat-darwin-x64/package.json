@@ -1,0 +1,14 @@
+{
+  "name": "revcat-darwin-x64",
+  "version": "0.0.0",
+  "description": "The revcat CLI binary for darwin-x64. Installed automatically by `revcat`.",
+  "homepage": "https://github.com/akshitkrnagpal/revcat",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/akshitkrnagpal/revcat.git"
+  },
+  "license": "MIT",
+  "files": ["bin/revcat"],
+  "os": ["darwin"],
+  "cpu": ["x64"]
+}
